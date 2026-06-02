@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ledgerpilot
+          POSTGRES_PASSWORD: ledgerpilot
+          POSTGRES_DB: ledgerpilot
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://ledgerpilot:ledgerpilot@localhost:5432/ledgerpilot?schema=public
+      TASKS_DRIVER: inline
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @ledgerpilot/db generate
+
+      - name: Push schema + apply RLS
+        run: |
+          pnpm --filter @ledgerpilot/db exec prisma db push --skip-generate
+          psql "$DATABASE_URL" -f packages/db/prisma/sql/rls.sql
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: End-to-end smoke test (offline AI)
+        run: pnpm --filter @ledgerpilot/worker smoke

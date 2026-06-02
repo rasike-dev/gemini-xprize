@@ -1,0 +1,326 @@
+// LedgerPilot AI - data model.
+// Multi-tenant: every tenant-scoped table carries tenantId and is protected by
+// Postgres Row-Level Security (see migrations/*_rls). The app sets
+// `app.tenant_id` per transaction; RLS is the real isolation boundary.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  STAFF
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+}
+
+enum AgentType {
+  INQUIRY
+  QUOTE
+  INVOICE
+  PAYMENT_FOLLOWUP
+  CASHFLOW
+  COMPLIANCE
+  SUPPORT
+}
+
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  AWAITING_APPROVAL
+  COMPLETED
+  FAILED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum IntakeChannel {
+  WHATSAPP
+  EMAIL
+  WEB
+}
+
+model Tenant {
+  id            String   @id @default(uuid())
+  clerkOrgId    String   @unique
+  name          String
+  currency      String   @default("LKR")
+  countryCode   String   @default("LK")
+  vatNumber     String?
+  autoSend      Boolean  @default(false)
+  tokenBudget   BigInt   @default(2000000)
+  tokensUsed    BigInt   @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users        User[]
+  customers    Customer[]
+  quotes       Quote[]
+  invoices     Invoice[]
+  payments     Payment[]
+  reminders    Reminder[]
+  agentRuns    AgentRun[]
+  inquiries    Inquiry[]
+  subscription Subscription?
+
+  @@map("tenants")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  tenantId    String
+  clerkUserId String   @unique
+  email       String
+  name        String?
+  role        UserRole @default(STAFF)
+  createdAt   DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Subscription {
+  id                 String   @id @default(uuid())
+  tenantId           String   @unique
+  plan               PlanTier @default(STARTER)
+  status             String   @default("trialing")
+  provider           String   @default("stripe") // stripe | payhere
+  externalCustomerId String?
+  externalSubId      String?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  phone       String?
+  email       String?
+  notes       String?
+  lastContact DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotes   Quote[]
+  invoices Invoice[]
+  inquiries Inquiry[]
+
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Inquiry {
+  id             String        @id @default(uuid())
+  tenantId       String
+  customerId     String?
+  channel        IntakeChannel
+  fromIdentifier String
+  fromName       String?
+  subject        String?
+  body           String
+  idempotencyKey String
+  receivedAt     DateTime      @default(now())
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+  agentRuns AgentRun[]
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId])
+  @@map("inquiries")
+}
+
+model Quote {
+  id         String      @id @default(uuid())
+  tenantId   String
+  customerId String
+  number     String
+  status     QuoteStatus @default(DRAFT)
+  currency   String      @default("LKR")
+  subtotalMinor Int       @default(0)
+  taxMinor      Int       @default(0)
+  totalMinor    Int       @default(0)
+  notes      String?
+  validUntil DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer    @relation(fields: [customerId], references: [id])
+  lines    QuoteLine[]
+  invoice  Invoice?
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id             String @id @default(uuid())
+  tenantId       String
+  quoteId        String
+  description    String
+  quantity       Float
+  unitPriceMinor Int
+  taxRatePct     Float  @default(0)
+  totalMinor     Int
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([quoteId])
+  @@map("quote_lines")
+}
+
+model Invoice {
+  id         String        @id @default(uuid())
+  tenantId   String
+  customerId String
+  quoteId    String?       @unique
+  number     String
+  status     InvoiceStatus @default(DRAFT)
+  currency   String        @default("LKR")
+  subtotalMinor Int        @default(0)
+  taxMinor      Int        @default(0)
+  totalMinor    Int        @default(0)
+  paidMinor     Int        @default(0)
+  dueDate    DateTime?
+  pdfUrl     String?
+  shareToken String        @unique @default(uuid())
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  quote     Quote?        @relation(fields: [quoteId], references: [id])
+  lines     InvoiceLine[]
+  payments  Payment[]
+  reminders Reminder[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id             String @id @default(uuid())
+  tenantId       String
+  invoiceId      String
+  description    String
+  quantity       Float
+  unitPriceMinor Int
+  taxRatePct     Float  @default(0)
+  totalMinor     Int
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  amountMinor Int
+  method      String   @default("manual")
+  reference   String?
+  paidAt      DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model Reminder {
+  id          String   @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  channel     String
+  subject     String?
+  message     String
+  tone        String   @default("FRIENDLY")
+  sentAt      DateTime?
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([invoiceId])
+  @@map("reminders")
+}
+
+/// Central AI audit table. Every AI decision is a row here: input, output,
+/// decision, confidence, model, tokens, cost, and human-approval status.
+model AgentRun {
+  id            String         @id @default(uuid())
+  tenantId      String
+  agentType     AgentType
+  status        AgentRunStatus @default(PENDING)
+  inquiryId     String?
+  subjectType   String?        // e.g. "invoice", "quote"
+  subjectId     String?
+  inputJson     Json
+  outputJson    Json?
+  decision      String?
+  confidence    Float?
+  humanApproved Boolean        @default(false)
+  approvedBy    String?
+  geminiModel   String?
+  tokensUsed    Int            @default(0)
+  costEstimate  Float          @default(0)
+  error         String?
+  idempotencyKey String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime       @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inquiry Inquiry? @relation(fields: [inquiryId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId])
+  @@index([agentType])
+  @@index([status])
+  @@map("agent_runs")
+}

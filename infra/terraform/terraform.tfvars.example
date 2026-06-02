@@ -1,0 +1,6 @@
+project_id   = "ledgerpilot-prod"
+region       = "asia-south1"
+db_tier      = "db-custom-1-3840"
+api_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/api:latest"
+worker_image = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/worker:latest"
+web_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/web:latest"
