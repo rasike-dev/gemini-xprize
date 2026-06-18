@@ -5,6 +5,7 @@ import { Webhook } from 'svix';
 import { UserRole } from '@ledgerpilot/shared';
 import { Public } from '../auth/decorators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Throttle } from '@nestjs/throttler';
 
 /**
  * Provisions our own Tenant/User rows from Clerk events so all FKs are ours.
@@ -16,6 +17,7 @@ export class ClerkWebhookController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @Post('clerk')
   async handle(
     @Req() req: Request,

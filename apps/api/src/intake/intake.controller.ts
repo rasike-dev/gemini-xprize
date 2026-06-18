@@ -14,6 +14,7 @@ import { Public } from '../auth/decorators.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AgentRunsService } from '../agent-runs/agent-runs.service.js';
+import { Throttle } from '@nestjs/throttler';
 
 /**
  * Inbound inquiry webhook (simulated WhatsApp/email for the MVP). Authenticated
@@ -30,6 +31,7 @@ export class IntakeController {
   ) {}
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post()
   async ingest(
     @Req() req: Request,

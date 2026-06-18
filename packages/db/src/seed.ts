@@ -10,18 +10,25 @@ import { prisma } from './client.js';
  * bypasses RLS). We still set app.tenant_id so it works under FORCE RLS too.
  */
 async function main() {
-  const tenantId = randomUUID();
+  const tenantId = 'f7f7ecf3-f566-4df7-94f5-9f5504f9699c';
+  const clerkOrgId = 'org_demo_printpro';
   const now = new Date();
   const daysAgo = (d: number) => new Date(now.getTime() - d * 864e5);
   const daysAhead = (d: number) => new Date(now.getTime() + d * 864e5);
 
   await prisma.$transaction(async (tx) => {
+    // Make seed rerunnable: wipe the previous demo tenant and recreate.
+    const existing = await tx.tenant.findUnique({ where: { clerkOrgId } });
+    if (existing) {
+      await tx.tenant.delete({ where: { id: existing.id } });
+    }
+
     await tx.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
 
     await tx.tenant.create({
       data: {
         id: tenantId,
-        clerkOrgId: 'org_demo_printpro',
+        clerkOrgId,
         name: 'PrintPro Lanka (Pvt) Ltd',
         currency: 'LKR',
         countryCode: 'LK',
@@ -256,7 +263,7 @@ async function main() {
     void paidInvoice;
   });
 
-  console.log(`Seeded demo tenant ${tenantId} (PrintPro Lanka).`);
+  console.log(`Seeded demo tenant ${tenantId} (${clerkOrgId}, PrintPro Lanka).`);
 }
 
 main()

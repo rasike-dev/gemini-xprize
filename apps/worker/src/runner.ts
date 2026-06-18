@@ -6,6 +6,8 @@ import { runQuoteAgent } from './agents/quote.js';
 import { runInvoiceAgent } from './agents/invoice.js';
 import { runPaymentFollowupAgent } from './agents/payment-followup.js';
 import { runCashflowAgent } from './agents/cashflow.js';
+import { runComplianceAgent } from './agents/compliance.js';
+import { runSupportAgent } from './agents/support.js';
 import type { AgentOutcome, AgentRunRow } from './agents/types.js';
 import { assertWithinBudget, BudgetExceededError, recordTokenUsage } from './budget.js';
 
@@ -115,6 +117,10 @@ async function dispatch(row: AgentRunRow): Promise<AgentOutcome> {
       return runPaymentFollowupAgent(row);
     case AgentType.CASHFLOW:
       return runCashflowAgent(row);
+    case AgentType.COMPLIANCE:
+      return runComplianceAgent(row);
+    case AgentType.SUPPORT:
+      return runSupportAgent(row);
     default:
       throw new Error(`No handler for agent type ${row.agentType}`);
   }

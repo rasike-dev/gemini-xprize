@@ -1,5 +1,6 @@
 import { apiFetchSafe } from '@/lib/api';
 import { Badge, Card, PageHeader } from '@/components/ui';
+import { ApproveRunButton, RetryRunButton } from '@/components/agent-run-buttons';
 
 interface AgentRun {
   id: string;
@@ -11,6 +12,7 @@ interface AgentRun {
   tokensUsed: number;
   costEstimate: number;
   humanApproved: boolean;
+  outputJson?: unknown;
   createdAt: string;
 }
 
@@ -43,13 +45,14 @@ export default async function AgentsPage() {
               <th className="px-5 py-3">Tokens</th>
               <th className="px-5 py-3">Cost</th>
               <th className="px-5 py-3">Approved</th>
+              <th className="px-5 py-3">Output</th>
               <th className="px-5 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {runs.length === 0 ? (
               <tr>
-                <td className="px-5 py-4 text-slate-400" colSpan={8}>
+                <td className="px-5 py-4 text-slate-400" colSpan={9}>
                   No agent runs yet.
                 </td>
               </tr>
@@ -66,7 +69,26 @@ export default async function AgentsPage() {
                   <td className="px-5 py-3 text-slate-500">{r.geminiModel ?? '-'}</td>
                   <td className="px-5 py-3 text-slate-500">{r.tokensUsed.toLocaleString()}</td>
                   <td className="px-5 py-3 text-slate-500">${r.costEstimate.toFixed(5)}</td>
-                  <td className="px-5 py-3 text-slate-500">{r.humanApproved ? 'Yes' : '-'}</td>
+                  <td className="px-5 py-3 text-slate-500">
+                    {r.humanApproved ? (
+                      'Yes'
+                    ) : r.status === 'AWAITING_APPROVAL' ? (
+                      <ApproveRunButton runId={r.id} />
+                    ) : r.status === 'FAILED' ? (
+                      <RetryRunButton runId={r.id} />
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                  <td className="max-w-xs px-5 py-3 text-xs text-slate-500">
+                    {r.outputJson ? (
+                      <pre className="max-h-20 overflow-auto whitespace-pre-wrap">
+                        {JSON.stringify(r.outputJson).slice(0, 220)}
+                      </pre>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
                   <td className="px-5 py-3">
                     <Badge status={r.status} />
                   </td>

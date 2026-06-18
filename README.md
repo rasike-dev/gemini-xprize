@@ -73,7 +73,7 @@ Send a simulated WhatsApp inquiry to the HMAC-signed intake webhook:
 BODY='{"channel":"WHATSAPP","from":"+94771234567","fromName":"Acme",
 "body":"Quote for 20 printed T-shirts please","idempotencyKey":"demo-12345678"}'
 SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$INTAKE_HMAC_SECRET" | awk '{print $2}')
-curl -X POST http://localhost:8080/intake \
+curl -X POST http://localhost:8080/api/intake \
   -H 'content-type: application/json' \
   -H 'x-ledgerpilot-org: org_demo_printpro' \
   -H "x-ledgerpilot-signature: $SIG" \
@@ -85,12 +85,40 @@ Then watch the dashboard's **AI Agent Log** populate.
 ## Deploy (Google Cloud)
 
 ```bash
-cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars   # set project + image refs
-terraform init && terraform apply
+PROJECT_ID=ledgerpilot-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:images
+PROJECT_ID=ledgerpilot-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:infra
 ```
 
 Then set secret values in Secret Manager (`DATABASE_APP_URL`, `CLERK_SECRET_KEY`,
 `GEMINI_API_KEY`, `INTAKE_HMAC_SECRET`, `STRIPE_*`, `RESEND_API_KEY`, ...).
+
+You can populate them from an env file:
+
+```bash
+PROJECT_ID=ledgerpilot-prod ENV_FILE=.env.production pnpm deploy:secrets
+```
+
+Apply DB migrations + RLS + seed against Cloud SQL:
+
+```bash
+CLOUDSQL_CONNECTION_NAME=project:region:ledgerpilot-pg \
+DATABASE_URL='postgresql://ledgerpilot:<password>@127.0.0.1:5432/ledgerpilot?schema=public' \
+pnpm deploy:db
+```
+
+Verify deployed services:
+
+```bash
+PROJECT_ID=ledgerpilot-prod REGION=asia-south1 pnpm deploy:verify
+```
+
+## Tests
+
+```bash
+# unit tests + API e2e (requires api + worker running for e2e)
+pnpm --filter @ledgerpilot/shared test
+pnpm --filter @ledgerpilot/ai test
+pnpm test:e2e
+```
 
 See `.cursor/plans` for the full hackathon strategy and production-readiness plan.

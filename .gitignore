@@ -45,3 +45,6 @@ apps/worker/.data/
 # local tooling
 .cursor/
 .direnv/
+.envrc
+test-results/
+playwright-report/

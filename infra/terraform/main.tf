@@ -100,6 +100,15 @@ resource "google_cloud_tasks_queue" "agent_runs" {
   name     = "agent-runs"
   location = var.region
 
+  stackdriver_logging_config {
+    sampling_ratio = 1.0
+  }
+
+  dead_letter_policy {
+    max_attempts = 10
+    dead_letter_queue = "${google_cloud_tasks_queue.agent_runs_deadletter.id}"
+  }
+
   retry_config {
     max_attempts  = 5
     min_backoff   = "5s"
@@ -111,6 +120,17 @@ resource "google_cloud_tasks_queue" "agent_runs" {
     max_dispatches_per_second = 20
     max_concurrent_dispatches = 50
   }
+  depends_on = [google_project_service.enabled]
+}
+
+resource "google_cloud_tasks_queue" "agent_runs_deadletter" {
+  name     = "agent-runs-deadletter"
+  location = var.region
+
+  stackdriver_logging_config {
+    sampling_ratio = 1.0
+  }
+
   depends_on = [google_project_service.enabled]
 }
 

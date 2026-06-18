@@ -61,6 +61,14 @@ export const complianceResultSchema = z.object({
 });
 export type ComplianceResult = z.infer<typeof complianceResultSchema>;
 
+/** Support Agent: respond to invoice/payment status customer questions. */
+export const supportResultSchema = z.object({
+  response: z.string().min(1).max(1200),
+  suggestedAction: z.string().max(280).nullable(),
+  confidence,
+});
+export type SupportResult = z.infer<typeof supportResultSchema>;
+
 /** Map agent type -> its output schema, for the worker's validation step. */
 export const agentResultSchemas = {
   INQUIRY: inquiryResultSchema,
@@ -68,4 +76,5 @@ export const agentResultSchemas = {
   PAYMENT_FOLLOWUP: reminderResultSchema,
   CASHFLOW: cashflowResultSchema,
   COMPLIANCE: complianceResultSchema,
+  SUPPORT: supportResultSchema,
 } as const;

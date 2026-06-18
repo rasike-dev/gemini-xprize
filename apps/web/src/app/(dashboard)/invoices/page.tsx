@@ -1,6 +1,7 @@
 import { formatMoney } from '@ledgerpilot/shared';
 import { apiFetchSafe } from '@/lib/api';
 import { Badge, Card, PageHeader } from '@/components/ui';
+import { TriggerInvoiceAgents } from '@/components/agent-run-buttons';
 
 interface Invoice {
   id: string;
@@ -13,8 +14,23 @@ interface Invoice {
   customer: { name: string };
 }
 
+interface AgentRun {
+  id: string;
+  agentType: string;
+  status: string;
+  subjectId: string | null;
+  outputJson?: unknown;
+}
+
 export default async function InvoicesPage() {
-  const invoices = await apiFetchSafe<Invoice[]>('/invoices', []);
+  const [invoices, runs] = await Promise.all([
+    apiFetchSafe<Invoice[]>('/invoices', []),
+    apiFetchSafe<AgentRun[]>('/agent-runs', []),
+  ]);
+
+  const byInvoice = new Map(
+    runs.filter((r) => r.subjectId).map((r) => [`${r.agentType}:${r.subjectId}`, r] as const),
+  );
 
   return (
     <div>
@@ -29,12 +45,15 @@ export default async function InvoicesPage() {
               <th className="px-5 py-3">Outstanding</th>
               <th className="px-5 py-3">Due</th>
               <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Agent Actions</th>
+              <th className="px-5 py-3">Compliance</th>
+              <th className="px-5 py-3">Support</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {invoices.length === 0 ? (
               <tr>
-                <td className="px-5 py-4 text-slate-400" colSpan={6}>
+                <td className="px-5 py-4 text-slate-400" colSpan={9}>
                   No invoices yet.
                 </td>
               </tr>
@@ -54,6 +73,29 @@ export default async function InvoicesPage() {
                   </td>
                   <td className="px-5 py-3">
                     <Badge status={inv.status} />
+                  </td>
+                  <td className="px-5 py-3">
+                    <TriggerInvoiceAgents invoiceId={inv.id} />
+                  </td>
+                  <td className="max-w-xs px-5 py-3 text-xs text-slate-500">
+                    {(() => {
+                      const run = byInvoice.get(`COMPLIANCE:${inv.id}`);
+                      if (!run) return '-';
+                      return `${run.status}`;
+                    })()}
+                  </td>
+                  <td className="max-w-xs px-5 py-3 text-xs text-slate-500">
+                    {(() => {
+                      const run = byInvoice.get(`SUPPORT:${inv.id}`);
+                      if (!run) return '-';
+                      const text =
+                        typeof run.outputJson === 'object' &&
+                        run.outputJson != null &&
+                        'response' in (run.outputJson as Record<string, unknown>)
+                          ? String((run.outputJson as Record<string, unknown>).response)
+                          : run.status;
+                      return text.slice(0, 120);
+                    })()}
                   </td>
                 </tr>
               ))

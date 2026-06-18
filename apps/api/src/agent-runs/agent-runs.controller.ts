@@ -1,7 +1,18 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { z } from 'zod';
+import { AgentType } from '@ledgerpilot/shared';
 import { Auth, TenantId } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/auth.types.js';
+import { ZodPipe } from '../common/zod.pipe.js';
 import { AgentRunsService } from './agent-runs.service.js';
+
+const triggerSchema = z.object({
+  agentType: z.nativeEnum(AgentType),
+  inputJson: z.record(z.string(), z.unknown()).default({}),
+  inquiryId: z.string().uuid().optional(),
+  subjectType: z.string().optional(),
+  subjectId: z.string().optional(),
+});
 
 @Controller('agent-runs')
 export class AgentRunsController {
@@ -20,5 +31,25 @@ export class AgentRunsController {
   @Post(':id/approve')
   approve(@Auth() auth: AuthContext, @Param('id') id: string) {
     return this.service.approve(auth.tenantId, id, auth.clerkUserId);
+  }
+
+  @Post(':id/retry')
+  retry(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.service.retryFailed(tenantId, id);
+  }
+
+  @Post()
+  createManual(
+    @TenantId() tenantId: string,
+    @Body(new ZodPipe(triggerSchema)) body: z.infer<typeof triggerSchema>,
+  ) {
+    return this.service.createManualRun({
+      tenantId,
+      agentType: body.agentType,
+      inputJson: body.inputJson,
+      inquiryId: body.inquiryId,
+      subjectType: body.subjectType,
+      subjectId: body.subjectId,
+    });
   }
 }

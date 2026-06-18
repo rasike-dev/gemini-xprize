@@ -1,10 +1,32 @@
 import express from 'express';
+import * as Sentry from '@sentry/node';
 import { agentTaskSchema } from '@ledgerpilot/shared';
 import { processAgentRun } from './runner.js';
 import { runCashflowSummaries, runOverdueScan } from './scheduler-jobs.js';
 
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? 'development',
+  });
+}
+
 const app = express();
 app.use(express.json({ limit: '1mb' }));
+app.use((req, res, next) => {
+  const started = Date.now();
+  res.on('finish', () => {
+    console.log(
+      JSON.stringify({
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - started,
+      }),
+    );
+  });
+  next();
+});
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'ledgerpilot-worker' });
@@ -27,6 +49,7 @@ app.post('/tasks/agent-run', async (req, res) => {
   } catch (err) {
     // Non-2xx tells Cloud Tasks to retry (backoff handled by the queue config).
     console.error('agent-run failed', err);
+    Sentry.captureException(err);
     res.status(500).json({ error: (err as Error).message });
   }
 });

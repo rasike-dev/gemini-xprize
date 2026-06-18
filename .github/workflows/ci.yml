@@ -48,6 +48,7 @@ jobs:
         run: |
           pnpm --filter @ledgerpilot/db exec prisma db push --skip-generate
           psql "$DATABASE_URL" -f packages/db/prisma/sql/rls.sql
+          pnpm --filter @ledgerpilot/db seed
 
       - name: Build
         run: pnpm build
@@ -57,3 +58,34 @@ jobs:
 
       - name: End-to-end smoke test (offline AI)
         run: pnpm --filter @ledgerpilot/worker smoke
+
+      - name: Unit tests
+        run: |
+          pnpm --filter @ledgerpilot/shared test
+          pnpm --filter @ledgerpilot/ai test
+
+      - name: Build API and worker for e2e
+        run: |
+          pnpm --filter @ledgerpilot/shared build
+          pnpm --filter @ledgerpilot/ai build
+          pnpm --filter @ledgerpilot/api build
+          pnpm --filter @ledgerpilot/worker build
+
+      - name: Start API and worker
+        run: |
+          DATABASE_URL="$DATABASE_URL" TASKS_DRIVER=inline DISABLE_AUTH=true WORKER_URL=http://127.0.0.1:8081 PORT=8080 node apps/api/dist/main.js > /tmp/api.log 2>&1 &
+          DATABASE_URL="$DATABASE_URL" TASKS_DRIVER=inline WORKER_PORT=8081 node apps/worker/dist/main.js > /tmp/worker.log 2>&1 &
+          sleep 6
+          curl -f http://127.0.0.1:8080/health
+          curl -f http://127.0.0.1:8081/health
+
+      - name: Playwright API e2e
+        run: pnpm test:e2e
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo "=== API LOG ==="
+          cat /tmp/api.log || true
+          echo "=== WORKER LOG ==="
+          cat /tmp/worker.log || true

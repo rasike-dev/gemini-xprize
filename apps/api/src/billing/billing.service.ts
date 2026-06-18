@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { createHash } from 'node:crypto';
 import { PlanTier } from '@ledgerpilot/shared';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditLogService } from '../common/audit-log.service.js';
 
 /**
  * Billing across Stripe (cards/subscriptions) and PayHere (Sri Lanka LKR).
@@ -13,7 +14,10 @@ export class BillingService {
   private readonly logger = new Logger(BillingService.name);
   private stripe?: Stripe;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditLogService,
+  ) {}
 
   private getStripe(): Stripe {
     if (!this.stripe) {
@@ -33,6 +37,12 @@ export class BillingService {
       cancel_url: cancelUrl,
       client_reference_id: tenantId,
       metadata: { tenantId, plan },
+    });
+    this.audit.log('billing_checkout_created', {
+      tenantId,
+      plan,
+      provider: 'stripe',
+      sessionId: session.id,
     });
     return { url: session.url };
   }
@@ -72,6 +82,7 @@ export class BillingService {
       default:
         this.logger.debug(`Unhandled Stripe event ${event.type}`);
     }
+    this.audit.log('billing_webhook_stripe', { type: event.type });
     return { received: true };
   }
 
@@ -97,6 +108,11 @@ export class BillingService {
     if (status_code === '2' && tenantId) {
       await this.upsertSubscription(tenantId, { status: 'active', provider: 'payhere' });
     }
+    this.audit.log('billing_webhook_payhere', {
+      tenantId,
+      statusCode: status_code,
+      orderId: order_id,
+    });
     return { received: true };
   }
 

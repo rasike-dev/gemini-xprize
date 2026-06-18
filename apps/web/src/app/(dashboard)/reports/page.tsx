@@ -1,6 +1,7 @@
 import { formatMoney } from '@ledgerpilot/shared';
 import { apiFetchSafe } from '@/lib/api';
 import { Card, PageHeader, StatCard } from '@/components/ui';
+import { ReportExportButtons } from '@/components/report-export-buttons';
 
 interface Summary {
   revenueThisMonthMinor: number;
@@ -36,6 +37,7 @@ export default async function ReportsPage() {
           (<code className="rounded bg-slate-100 px-1">GET /api/reports/export</code>) and wired
           into the monthly Cash-flow agent summary.
         </p>
+        <ReportExportButtons />
       </Card>
     </div>
   );
