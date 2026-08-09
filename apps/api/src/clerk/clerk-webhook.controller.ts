@@ -1,20 +1,25 @@
-import { BadRequestException, Controller, Headers, Post, Req } from '@nestjs/common';
+import { BadRequestException, Controller, Headers, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
-import { randomUUID } from 'node:crypto';
 import { Webhook } from 'svix';
 import { UserRole } from '@ledgerpilot/shared';
 import { Public } from '../auth/decorators.js';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { AllowInactive } from '../billing/entitlements.decorators.js';
+import { TenantProvisioningService } from '../tenant/tenant-provisioning.service.js';
 import { Throttle } from '@nestjs/throttler';
 
 /**
- * Provisions our own Tenant/User rows from Clerk events so all FKs are ours.
- * organization.created -> Tenant; organizationMembership.created -> User.
- * Verified with the Clerk (svix) signing secret.
+ * Keeps our Tenant/User rows in step with Clerk organizations and memberships.
+ *
+ * Tenants are also provisioned just-in-time by the auth guard, so this webhook is
+ * a synchroniser rather than the only way in: it handles renames, role changes,
+ * and removals that would otherwise never reach us.
  */
 @Controller('webhooks')
+@AllowInactive()
 export class ClerkWebhookController {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ClerkWebhookController.name);
+
+  constructor(private readonly provisioning: TenantProvisioningService) {}
 
   @Public()
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
@@ -25,75 +30,85 @@ export class ClerkWebhookController {
     @Headers('svix-timestamp') svixTs: string,
     @Headers('svix-signature') svixSig: string,
   ) {
-    const secret = process.env.CLERK_WEBHOOK_SECRET;
-    const raw = req.rawBody?.toString() ?? '';
-
-    let evt: { type: string; data: Record<string, unknown> };
-    if (secret) {
-      const wh = new Webhook(secret);
-      evt = wh.verify(raw, {
-        'svix-id': svixId,
-        'svix-timestamp': svixTs,
-        'svix-signature': svixSig,
-      }) as typeof evt;
-    } else {
-      evt = JSON.parse(raw);
-    }
+    const evt = this.verify(req, svixId, svixTs, svixSig);
 
     switch (evt.type) {
       case 'organization.created':
-        await this.createTenant(evt.data);
+        await this.provisioning.createTenant(
+          String(evt.data.id ?? ''),
+          String(evt.data.name ?? 'New Business'),
+        );
         break;
+
+      case 'organization.updated':
+        await this.provisioning.renameTenant(
+          String(evt.data.id ?? ''),
+          String(evt.data.name ?? 'New Business'),
+        );
+        break;
+
       case 'organizationMembership.created':
-        await this.createUser(evt.data);
+      case 'organizationMembership.updated':
+        await this.upsertMembership(evt.data);
         break;
+
+      case 'organizationMembership.deleted':
+        await this.removeMembership(evt.data);
+        break;
+
       default:
-        break;
+        this.logger.debug(`Unhandled Clerk event ${evt.type}`);
     }
     return { received: true };
   }
 
-  private async createTenant(data: Record<string, unknown>) {
-    const clerkOrgId = String(data.id ?? '');
-    const name = String(data.name ?? 'New Business');
-    if (!clerkOrgId) throw new BadRequestException('Missing org id');
-    const tenantId = randomUUID();
-    await this.prisma.client.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('app.tenant_id', ${tenantId}, true)`;
-      await tx.tenant.upsert({
-        where: { clerkOrgId },
-        update: { name },
-        create: { id: tenantId, clerkOrgId, name },
-      });
-    });
+  private verify(
+    req: Request,
+    svixId: string,
+    svixTs: string,
+    svixSig: string,
+  ): { type: string; data: Record<string, unknown> } {
+    const secret = process.env.CLERK_WEBHOOK_SECRET;
+    const raw = req.rawBody?.toString() ?? '';
+
+    // Fail closed: an unverified payload can create tenants and grant roles.
+    if (!secret) {
+      this.logger.error('CLERK_WEBHOOK_SECRET is not set; refusing to process webhook.');
+      throw new BadRequestException('Webhook verification is not configured.');
+    }
+
+    return new Webhook(secret).verify(raw, {
+      'svix-id': svixId,
+      'svix-timestamp': svixTs,
+      'svix-signature': svixSig,
+    }) as { type: string; data: Record<string, unknown> };
   }
 
-  private async createUser(data: Record<string, unknown>) {
+  private async upsertMembership(data: Record<string, unknown>) {
     const org = (data.organization ?? {}) as Record<string, unknown>;
     const pub = (data.public_user_data ?? {}) as Record<string, unknown>;
     const clerkOrgId = String(org.id ?? '');
     const clerkUserId = String(pub.user_id ?? '');
-    const role = String(data.role ?? '').includes('admin') ? UserRole.OWNER : UserRole.STAFF;
     if (!clerkOrgId || !clerkUserId) return;
 
-    const rows = await this.prisma.client.$queryRaw<{ resolve_tenant_id: string | null }[]>`
-      SELECT resolve_tenant_id(${clerkOrgId}) AS resolve_tenant_id
-    `;
-    const tenantId = rows[0]?.resolve_tenant_id;
+    const tenantId = await this.provisioning.resolveTenantId(clerkOrgId);
     if (!tenantId) return;
 
-    await this.prisma.forTenant(tenantId, (tx) =>
-      tx.user.upsert({
-        where: { clerkUserId },
-        update: { role },
-        create: {
-          tenantId,
-          clerkUserId,
-          email: String(pub.identifier ?? `${clerkUserId}@unknown`),
-          name: [pub.first_name, pub.last_name].filter(Boolean).join(' ') || null,
-          role,
-        },
-      }),
-    );
+    await this.provisioning.ensureUser(tenantId, {
+      clerkUserId,
+      email: String(pub.identifier ?? `${clerkUserId}@unknown`),
+      name: [pub.first_name, pub.last_name].filter(Boolean).join(' ') || undefined,
+      role: String(data.role ?? '').includes('admin') ? UserRole.OWNER : UserRole.STAFF,
+    });
+  }
+
+  private async removeMembership(data: Record<string, unknown>) {
+    const org = (data.organization ?? {}) as Record<string, unknown>;
+    const pub = (data.public_user_data ?? {}) as Record<string, unknown>;
+    const clerkOrgId = String(org.id ?? '');
+    const clerkUserId = String(pub.user_id ?? '');
+    if (!clerkOrgId || !clerkUserId) return;
+
+    await this.provisioning.removeUser(clerkOrgId, clerkUserId);
   }
 }

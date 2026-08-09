@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { z } from 'zod';
-import { AgentType } from '@ledgerpilot/shared';
-import { Auth, TenantId } from '../auth/decorators.js';
+import { AgentType, UserRole } from '@ledgerpilot/shared';
+import { Auth, Roles, TenantId } from '../auth/decorators.js';
 import type { AuthContext } from '../auth/auth.types.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import { AgentRunsService } from './agent-runs.service.js';
@@ -28,6 +28,12 @@ export class AgentRunsController {
     return this.service.get(tenantId, id);
   }
 
+  /**
+   * Owner-only: approving a run sends the drafted message to a customer under the
+   * business's name, and for a payment reminder that is a debt-collection message.
+   * That is the owner's call, not a staff member's.
+   */
+  @Roles(UserRole.OWNER)
   @Post(':id/approve')
   approve(@Auth() auth: AuthContext, @Param('id') id: string) {
     return this.service.approve(auth.tenantId, id, auth.clerkUserId);

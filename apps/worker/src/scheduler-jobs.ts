@@ -1,6 +1,7 @@
 import { prisma, withTenant } from '@ledgerpilot/db';
 import { AgentType } from '@ledgerpilot/shared';
 import { createAndProcessRun } from './runner.js';
+import { ensureCurrentPeriod } from './budget.js';
 
 async function allTenantIds(): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ all_tenant_ids: string }[]>`
@@ -62,4 +63,29 @@ export async function runCashflowSummaries(): Promise<{ tenants: number }> {
     });
   }
   return { tenants: tenantIds.length };
+}
+
+/**
+ * Cloud Scheduler -> /jobs/usage-reset (daily). Rolls each tenant's usage period
+ * so allowances renew.
+ *
+ * The budget check also rolls lazily, so this job is a safety net rather than the
+ * only mechanism: nobody should lose access to features they are paying for
+ * because a scheduler invocation failed.
+ */
+export async function runUsageReset(): Promise<{ tenants: number; failed: number }> {
+  const tenantIds = await allTenantIds();
+  let failed = 0;
+
+  for (const tenantId of tenantIds) {
+    try {
+      await ensureCurrentPeriod(tenantId);
+    } catch (err) {
+      // One tenant's failure must not stop the rest from resetting.
+      failed += 1;
+      console.error(`[usage-reset] tenant ${tenantId} failed: ${(err as Error).message}`);
+    }
+  }
+
+  return { tenants: tenantIds.length, failed };
 }

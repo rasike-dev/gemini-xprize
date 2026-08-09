@@ -22,6 +22,23 @@ enum PlanTier {
   GROWTH
 }
 
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum BillingProvider {
+  PAYHERE
+  STRIPE
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
 enum AgentType {
   INQUIRY
   QUOTE
@@ -71,10 +88,16 @@ model Tenant {
   countryCode   String   @default("LK")
   vatNumber     String?
   autoSend      Boolean  @default(false)
-  tokenBudget   BigInt   @default(2000000)
-  tokensUsed    BigInt   @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+
+  /// Per-period usage counters, reset by the daily scheduler when the period rolls.
+  /// tokenBudget is derived from the plan tier on each reset.
+  tokenBudget      BigInt   @default(2000000)
+  tokensUsed       BigInt   @default(0)
+  agentRunsUsed    Int      @default(0)
+  usagePeriodStart DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   users        User[]
   customers    Customer[]
@@ -84,6 +107,7 @@ model Tenant {
   reminders    Reminder[]
   agentRuns    AgentRun[]
   inquiries    Inquiry[]
+  auditLogs    AuditLog[]
   subscription Subscription?
 
   @@map("tenants")
@@ -105,20 +129,82 @@ model User {
 }
 
 model Subscription {
-  id                 String   @id @default(uuid())
-  tenantId           String   @unique
-  plan               PlanTier @default(STARTER)
-  status             String   @default("trialing")
-  provider           String   @default("stripe") // stripe | payhere
+  id       String             @id @default(uuid())
+  tenantId String             @unique
+  plan     PlanTier           @default(STARTER)
+  status   SubscriptionStatus @default(TRIALING)
+  provider BillingProvider    @default(PAYHERE)
+  interval BillingInterval    @default(MONTHLY)
+
   externalCustomerId String?
   externalSubId      String?
-  currentPeriodEnd   DateTime?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+
+  /// End of the paid period. Access is denied once this passes (see EntitlementsService).
+  currentPeriodEnd DateTime?
+  /// End of the free trial. Only meaningful while status is TRIALING.
+  trialEndsAt      DateTime?
+  /// When the gateway will next charge, for recurring subscriptions only.
+  nextBillingAt    DateTime?
+  /// Set when the customer cancels. Access continues until currentPeriodEnd,
+  /// which is the period they already paid for; status stays ACTIVE until then.
+  cancelAtPeriodEnd Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments BillingPayment[]
+
+  @@index([externalSubId])
+  @@map("subscriptions")
+}
+
+/// Payments LedgerPilot received from a tenant for its own subscription.
+/// Distinct from `Payment`, which is money the tenant received from its customers.
+model BillingPayment {
+  id             String          @id @default(uuid())
+  tenantId       String
+  subscriptionId String
+  provider       BillingProvider @default(PAYHERE)
+  /// Our generated reference, sent to the gateway as order_id. Unique per tenant.
+  orderId        String
+  /// Gateway's own payment reference, once known.
+  externalRef    String?
+  plan           PlanTier
+  interval       BillingInterval
+  amountMinor    Int
+  currency       String          @default("LKR")
+  /// Raw gateway status code, kept for reconciliation and dispute handling.
+  statusCode     String
+  succeeded      Boolean         @default(false)
+  /// Which charge in a recurring series this was. 1 for one-time payments.
+  installment    Int             @default(1)
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  createdAt      DateTime        @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, orderId])
+  @@index([tenantId])
+  @@map("billing_payments")
+}
+
+/// Durable audit trail. Complements the AgentRun log, which covers AI decisions
+/// only; this records human and system actions (billing, approvals, sends).
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  action    String
+  /// Clerk user id, or a system identifier such as "webhook:payhere".
+  actor     String
+  metaJson  Json     @default("{}")
+  createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@map("subscriptions")
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
 }
 
 model Customer {

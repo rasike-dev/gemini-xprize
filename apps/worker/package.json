@@ -16,6 +16,7 @@
     "@google-cloud/storage": "^7.14.0",
     "@ledgerpilot/ai": "workspace:*",
     "@ledgerpilot/db": "workspace:*",
+    "@ledgerpilot/notify": "workspace:*",
     "@ledgerpilot/shared": "workspace:*",
     "express": "^4.21.2",
     "pdfkit": "^0.15.1",

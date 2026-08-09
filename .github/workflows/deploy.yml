@@ -1,0 +1,55 @@
+name: Deploy
+
+# Deploys on every merge to main: staging first, then production behind a GitHub
+# environment approval. Deploy used to be five shell commands run by hand, which
+# is fine until the one person who knows them is asleep.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which environment to deploy
+        type: choice
+        default: staging
+        options: [staging, production]
+
+concurrency:
+  # Never let two deploys race on the same database.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation; no long-lived service account keys.
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: meta
+        run: echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  staging:
+    needs: build
+    if: github.event_name == 'push' || inputs.target == 'staging'
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: staging
+      tag: ${{ needs.build.outputs.tag }}
+    secrets: inherit
+
+  production:
+    needs: [build, staging]
+    # Requires a reviewer on the 'production' GitHub environment. If staging is
+    # broken, this never runs.
+    if: always() && needs.staging.result == 'success' && (github.event_name == 'push' || inputs.target == 'production')
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: production
+      tag: ${{ needs.build.outputs.tag }}
+    secrets: inherit

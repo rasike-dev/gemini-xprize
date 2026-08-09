@@ -1,6 +1,28 @@
-project_id   = "ledgerpilot-prod"
-region       = "asia-south1"
-db_tier      = "db-custom-1-3840"
+project_id  = "ledgerpilot-prod"
+region      = "asia-south1"
+environment = "prod"
+db_tier     = "db-custom-1-3840"
+
 api_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/api:latest"
 worker_image = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/worker:latest"
 web_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/web:latest"
+
+# Public origins. PayHere whitelists the merchant secret against these, so they
+# must be the real domains and not the generated Cloud Run URLs.
+web_domain = "https://ledgerpilot.lk"
+api_domain = "https://api.ledgerpilot.lk"
+
+# Keep one warm instance so a paying customer never waits on a cold start.
+min_instances = 1
+
+alert_email           = "alerts@ledgerpilot.lk"
+clerk_publishable_key = "pk_live_replace_me"
+
+# Switch payhere_sandbox to false only after PayHere approves the account.
+payhere_merchant_id = "1234567"
+payhere_sandbox     = true
+
+# LITE bills one-time payments only. Move to PLUS for automatic renewal once the
+# LKR 3,990/month fee is worth paying — see docs/PAYHERE-PLUS-MIGRATION.md.
+payhere_merchant_plan = "LITE"
+payhere_app_id        = ""

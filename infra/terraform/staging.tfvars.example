@@ -1,0 +1,26 @@
+# Staging lives in its own GCP project, so its database and secrets are entirely
+# separate from production. Nothing done here can reach a real customer's books.
+#
+#   terraform workspace select staging
+#   terraform apply -var-file=staging.tfvars
+
+project_id  = "ledgerpilot-staging"
+region      = "asia-south1"
+environment = "staging"
+db_tier     = "db-f1-micro"
+
+api_image    = "asia-south1-docker.pkg.dev/ledgerpilot-staging/ledgerpilot/api:latest"
+worker_image = "asia-south1-docker.pkg.dev/ledgerpilot-staging/ledgerpilot/worker:latest"
+web_image    = "asia-south1-docker.pkg.dev/ledgerpilot-staging/ledgerpilot/web:latest"
+
+web_domain = "https://staging.ledgerpilot.lk"
+api_domain = "https://api-staging.ledgerpilot.lk"
+
+# Cold starts are fine here, and scale-to-zero keeps staging close to free.
+min_instances = 0
+
+alert_email           = "alerts@ledgerpilot.lk"
+clerk_publishable_key = "pk_test_replace_me"
+
+payhere_merchant_id = "1234567"
+payhere_sandbox     = true

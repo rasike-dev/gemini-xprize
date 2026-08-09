@@ -1,126 +1,85 @@
 'use client';
 
-import { useState } from 'react';
-
-async function postJson(url: string, body?: unknown) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    throw new Error(await res.text());
-  }
-}
+import { useAction } from '@/lib/use-action';
 
 export function ApproveRunButton({ runId }: { runId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onClick() {
-    setLoading(true);
-    setError(null);
-    try {
-      await postJson(`/api/agent-runs/${runId}/approve`);
-      window.location.reload();
-    } catch (e) {
-      setError((e as Error).message.slice(0, 100));
-      setLoading(false);
-    }
-  }
+  const action = useAction();
+  const key = `approve:${runId}`;
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={() => void onClick()}
-        className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-60"
-      >
-        {loading ? 'Approving...' : 'Approve'}
-      </button>
-      {error ? <span className="text-[11px] text-rose-600">{error}</span> : null}
-    </div>
+    <button
+      type="button"
+      disabled={action.busy}
+      onClick={() =>
+        void action.run(key, `/agent-runs/${runId}/approve`, {
+          success: 'Approved. Any pending message has been sent.',
+        })
+      }
+      className="rounded-md bg-emerald-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+    >
+      {action.isPending(key) ? 'Approving…' : 'Approve'}
+    </button>
   );
 }
 
 export function RetryRunButton({ runId }: { runId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onClick() {
-    setLoading(true);
-    setError(null);
-    try {
-      await postJson(`/api/agent-runs/${runId}/retry`);
-      window.location.reload();
-    } catch (e) {
-      setError((e as Error).message.slice(0, 100));
-      setLoading(false);
-    }
-  }
+  const action = useAction();
+  const key = `retry:${runId}`;
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        disabled={loading}
-        onClick={() => void onClick()}
-        className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-60"
-      >
-        {loading ? 'Retrying...' : 'Retry'}
-      </button>
-      {error ? <span className="text-[11px] text-rose-600">{error}</span> : null}
-    </div>
+    <button
+      type="button"
+      disabled={action.busy}
+      onClick={() =>
+        void action.run(key, `/agent-runs/${runId}/retry`, { success: 'Queued for another try.' })
+      }
+      className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-amber-700 disabled:opacity-60"
+    >
+      {action.isPending(key) ? 'Retrying…' : 'Retry'}
+    </button>
   );
 }
 
-export function TriggerInvoiceAgents({ invoiceId }: { invoiceId: string }) {
-  const [busy, setBusy] = useState<'COMPLIANCE' | 'SUPPORT' | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const AGENT_INPUTS = {
+  COMPLIANCE: (invoiceId: string) => ({ invoiceId }),
+  SUPPORT: (invoiceId: string) => ({
+    invoiceId,
+    question: 'What is the current status and what should we do next?',
+  }),
+} as const;
 
-  async function trigger(agentType: 'COMPLIANCE' | 'SUPPORT') {
-    setBusy(agentType);
-    setError(null);
-    try {
-      await postJson('/api/agent-runs/trigger', {
+export function TriggerInvoiceAgents({ invoiceId }: { invoiceId: string }) {
+  const action = useAction();
+
+  function trigger(agentType: keyof typeof AGENT_INPUTS) {
+    void action.run(`${agentType}:${invoiceId}`, '/agent-runs', {
+      body: {
         agentType,
         subjectType: 'invoice',
         subjectId: invoiceId,
-        inputJson:
-          agentType === 'COMPLIANCE'
-            ? { invoiceId }
-            : {
-                invoiceId,
-                question: 'What is the current status and what should we do next?',
-              },
-      });
-      window.location.reload();
-    } catch (e) {
-      setError((e as Error).message.slice(0, 100));
-      setBusy(null);
-    }
+        inputJson: AGENT_INPUTS[agentType](invoiceId),
+      },
+      success: `${agentType === 'COMPLIANCE' ? 'Compliance' : 'Support'} agent queued.`,
+    });
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        disabled={busy !== null}
-        onClick={() => void trigger('COMPLIANCE')}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 disabled:opacity-60"
-      >
-        {busy === 'COMPLIANCE' ? 'Running...' : 'Run Compliance'}
-      </button>
-      <button
-        type="button"
-        disabled={busy !== null}
-        onClick={() => void trigger('SUPPORT')}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 disabled:opacity-60"
-      >
-        {busy === 'SUPPORT' ? 'Running...' : 'Run Support'}
-      </button>
-      {error ? <span className="text-[11px] text-rose-600">{error}</span> : null}
+      {(Object.keys(AGENT_INPUTS) as (keyof typeof AGENT_INPUTS)[]).map((agentType) => {
+        const key = `${agentType}:${invoiceId}`;
+        const label = agentType === 'COMPLIANCE' ? 'Compliance' : 'Support';
+        return (
+          <button
+            key={agentType}
+            type="button"
+            disabled={action.busy}
+            onClick={() => trigger(agentType)}
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
+          >
+            {action.isPending(key) ? 'Running…' : `Run ${label}`}
+          </button>
+        );
+      })}
     </div>
   );
 }

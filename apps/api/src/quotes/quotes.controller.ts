@@ -1,6 +1,14 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { AgentType, createQuoteSchema, type CreateQuote } from '@ledgerpilot/shared';
-import { TenantId } from '../auth/decorators.js';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  AgentType,
+  QuoteStatus,
+  createQuoteSchema,
+  updateQuoteSchema,
+  type CreateQuote,
+  type UpdateQuote,
+} from '@ledgerpilot/shared';
+import { Auth, TenantId } from '../auth/decorators.js';
+import type { AuthContext } from '../auth/auth.types.js';
 import { ZodPipe } from '../common/zod.pipe.js';
 import { QuotesService } from './quotes.service.js';
 import { InvoicesService } from '../invoices/invoices.service.js';
@@ -29,15 +37,34 @@ export class QuotesController {
     return this.quotes.create(tenantId, body);
   }
 
+  @Patch(':id')
+  update(
+    @Auth() auth: AuthContext,
+    @Param('id') id: string,
+    @Body(new ZodPipe(updateQuoteSchema)) body: UpdateQuote,
+  ) {
+    return this.quotes.update(auth.tenantId, id, body, auth.clerkUserId);
+  }
+
+  @Delete(':id')
+  remove(@Auth() auth: AuthContext, @Param('id') id: string) {
+    return this.quotes.remove(auth.tenantId, id, auth.clerkUserId);
+  }
+
   @Post(':id/send')
-  send(@TenantId() tenantId: string, @Param('id') id: string) {
-    return this.quotes.setStatus(tenantId, id, 'SENT');
+  send(@Auth() auth: AuthContext, @Param('id') id: string) {
+    return this.quotes.send(auth.tenantId, id, auth.clerkUserId);
+  }
+
+  @Post(':id/reject')
+  reject(@TenantId() tenantId: string, @Param('id') id: string) {
+    return this.quotes.setStatus(tenantId, id, QuoteStatus.REJECTED);
   }
 
   /** Accept a quote and convert it into an invoice. */
   @Post(':id/accept')
   async accept(@TenantId() tenantId: string, @Param('id') id: string) {
-    await this.quotes.setStatus(tenantId, id, 'ACCEPTED');
+    await this.quotes.setStatus(tenantId, id, QuoteStatus.ACCEPTED);
     const invoice = await this.invoices.createFromQuote(tenantId, id);
     // Invoice Agent renders the PDF asynchronously (logged as an AgentRun).
     await this.agentRuns.createAndEnqueue({

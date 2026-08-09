@@ -1,14 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { prisma } from './client.js';
+import { createOwnerClient } from './client.js';
 
 /**
  * Seeds a demo tenant with a realistic small-business dataset: a printing shop
  * with customers, an inquiry, a quote, invoices (one overdue), a payment,
  * reminders, and a history of AgentRuns. Powers the demo + smoke test.
  *
- * Run with a connection that can write (local: postgres superuser, which also
- * bypasses RLS). We still set app.tenant_id so it works under FORCE RLS too.
+ * Runs on the owner connection, which bypasses RLS: the wipe-and-recreate below
+ * spans a tenant that does not exist yet. app.tenant_id is still set so this also
+ * works if it is ever pointed at a restricted role.
  */
+const prisma = createOwnerClient();
 async function main() {
   const tenantId = 'f7f7ecf3-f566-4df7-94f5-9f5504f9699c';
   const clerkOrgId = 'org_demo_printpro';
@@ -34,8 +36,15 @@ async function main() {
         countryCode: 'LK',
         vatNumber: '134567890-7000',
         autoSend: false,
+        tokenBudget: BigInt(5_000_000),
         subscription: {
-          create: { plan: 'GROWTH', status: 'active', provider: 'stripe' },
+          create: {
+            plan: 'GROWTH',
+            status: 'ACTIVE',
+            provider: 'PAYHERE',
+            interval: 'MONTHLY',
+            currentPeriodEnd: daysAhead(30),
+          },
         },
         users: {
           create: [

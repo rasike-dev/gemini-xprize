@@ -2,7 +2,11 @@ import express from 'express';
 import * as Sentry from '@sentry/node';
 import { agentTaskSchema } from '@ledgerpilot/shared';
 import { processAgentRun } from './runner.js';
-import { runCashflowSummaries, runOverdueScan } from './scheduler-jobs.js';
+import { runCashflowSummaries, runOverdueScan, runUsageReset } from './scheduler-jobs.js';
+import { assertAiConfigIsSafe } from './startup-checks.js';
+
+// Refuse to start rather than silently serve mock AI output in production.
+assertAiConfigIsSafe();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -58,6 +62,8 @@ app.post('/jobs/overdue-scan', async (_req, res) => {
   try {
     res.json(await runOverdueScan());
   } catch (err) {
+    console.error('overdue-scan failed', err);
+    Sentry.captureException(err);
     res.status(500).json({ error: (err as Error).message });
   }
 });
@@ -66,6 +72,18 @@ app.post('/jobs/cashflow-summary', async (_req, res) => {
   try {
     res.json(await runCashflowSummaries());
   } catch (err) {
+    console.error('cashflow-summary failed', err);
+    Sentry.captureException(err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+/** Rolls each tenant's usage period so plan allowances renew. */
+app.post('/jobs/usage-reset', async (_req, res) => {
+  try {
+    res.json(await runUsageReset());
+  } catch (err) {
+    Sentry.captureException(err);
     res.status(500).json({ error: (err as Error).message });
   }
 });

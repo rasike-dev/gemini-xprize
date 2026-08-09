@@ -1,27 +1,30 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
+import { ToastProvider } from '@/components/toast';
 import { clerkEnabled } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'LedgerPilot AI',
-  description: 'AI finance & operations agent for small businesses',
+  title: {
+    default: 'LedgerPilot AI — Finance & ops on autopilot',
+    template: '%s',
+  },
+  description:
+    'LedgerPilot AI turns customer messages into quotes and invoices, chases overdue payments, and shows you where your cash is going.',
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  if (clerkEnabled) {
-    const { ClerkProvider } = await import('@clerk/nextjs');
-    return (
-      <ClerkProvider>
-        <html lang="en">
-          <body>{children}</body>
-        </html>
-      </ClerkProvider>
-    );
-  }
-  return (
+  const tree = (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
+
+  if (clerkEnabled) {
+    const { ClerkProvider } = await import('@clerk/nextjs');
+    return <ClerkProvider>{tree}</ClerkProvider>;
+  }
+  return tree;
 }

@@ -9,7 +9,13 @@ import { runCashflowAgent } from './agents/cashflow.js';
 import { runComplianceAgent } from './agents/compliance.js';
 import { runSupportAgent } from './agents/support.js';
 import type { AgentOutcome, AgentRunRow } from './agents/types.js';
-import { assertWithinBudget, BudgetExceededError, recordTokenUsage } from './budget.js';
+import {
+  assertWithinBudget,
+  assertWithinRunQuota,
+  BudgetExceededError,
+  recordAgentRun,
+  recordTokenUsage,
+} from './budget.js';
 
 /** Create a PENDING AgentRun then process it (used for chaining inside the worker). */
 export async function createAndProcessRun(input: {
@@ -66,7 +72,12 @@ export async function processAgentRun(task: AgentTask): Promise<void> {
   };
 
   try {
+    // Scheduled work never passes through the API, so both plan limits are
+    // enforced here as well as at the API boundary.
+    await assertWithinRunQuota(tenantId);
     await assertWithinBudget(tenantId);
+    await recordAgentRun(tenantId);
+
     const outcome = await dispatch(row);
 
     await withTenant(tenantId, (tx) =>

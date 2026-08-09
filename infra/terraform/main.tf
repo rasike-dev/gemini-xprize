@@ -8,6 +8,7 @@ locals {
     "artifactregistry.googleapis.com",
     "aiplatform.googleapis.com",
     "storage.googleapis.com",
+    "monitoring.googleapis.com",
   ]
 }
 
@@ -64,7 +65,8 @@ resource "google_sql_user" "owner" {
   password = random_password.owner.result
 }
 
-# Runtime app role (RLS-enforced, NOT a superuser). Created here; granted in rls.sql.
+# Runtime app role (RLS-enforced, NOT a superuser). Created here; the RLS
+# migration grants it table privileges.
 resource "google_sql_user" "app" {
   name     = "ledgerpilot_app"
   instance = google_sql_database_instance.pg.name

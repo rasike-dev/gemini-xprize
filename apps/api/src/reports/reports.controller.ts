@@ -2,6 +2,7 @@ import { Controller, Get, Header, Query } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { z } from 'zod';
 import { TenantId } from '../auth/decorators.js';
+import { RequiresFeature } from '../billing/entitlements.decorators.js';
 import { ReportsService } from './reports.service.js';
 
 const exportQuerySchema = z.object({
@@ -21,6 +22,8 @@ export class ReportsController {
     return this.reports.monthlySummary(tenantId);
   }
 
+  // A read, but a paid one: gate on the feature rather than the HTTP method.
+  @RequiresFeature('reportExports')
   @Get('export')
   @Header('Cache-Control', 'no-store')
   async export(

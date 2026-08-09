@@ -9,15 +9,22 @@ import { Reflector } from '@nestjs/core';
 import { verifyToken } from '@clerk/backend';
 import type { Request } from 'express';
 import { UserRole } from '@ledgerpilot/shared';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { TenantProvisioningService } from '../tenant/tenant-provisioning.service.js';
 import { IS_PUBLIC_KEY } from './decorators.js';
+
+/** True only when dev-header auth is both requested and permitted. */
+export function devAuthEnabled(): boolean {
+  return process.env.DISABLE_AUTH === 'true' && process.env.NODE_ENV !== 'production';
+}
 
 /**
  * Verifies the Clerk session JWT (stateless, via JWKS) and resolves the active
  * organization to our internal tenant id. Attaches an AuthContext to the request.
  *
- * Dev mode (DISABLE_AUTH=true): trusts `x-dev-org-id` / `x-dev-role` headers so
- * the stack runs without Clerk configured. Never enable in production.
+ * Dev mode (DISABLE_AUTH=true) trusts `x-dev-org-id` / `x-dev-role` headers so the
+ * stack runs without Clerk configured. It is refused outright when NODE_ENV is
+ * production — see assertAuthConfigIsSafe, which stops the process at boot rather
+ * than letting a misconfigured deploy serve unauthenticated traffic.
  */
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
@@ -25,7 +32,7 @@ export class ClerkAuthGuard implements CanActivate {
 
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly provisioning: TenantProvisioningService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -39,12 +46,14 @@ export class ClerkAuthGuard implements CanActivate {
 
     let clerkOrgId: string;
     let clerkUserId: string;
-    let role: UserRole;
+    let roleHint: UserRole;
+    let email: string | undefined;
+    let name: string | undefined;
 
-    if (process.env.DISABLE_AUTH === 'true') {
+    if (devAuthEnabled()) {
       clerkOrgId = (req.header('x-dev-org-id') ?? 'org_demo_printpro').trim();
       clerkUserId = (req.header('x-dev-user-id') ?? 'user_demo_owner').trim();
-      role = (req.header('x-dev-role') as UserRole) ?? UserRole.OWNER;
+      roleHint = (req.header('x-dev-role') as UserRole) ?? UserRole.OWNER;
     } else {
       const token = req.header('authorization')?.replace(/^Bearer\s+/i, '');
       if (!token) throw new UnauthorizedException('Missing bearer token');
@@ -55,24 +64,52 @@ export class ClerkAuthGuard implements CanActivate {
         });
         clerkOrgId = String(payload.org_id ?? payload['orgId'] ?? '');
         clerkUserId = String(payload.sub ?? '');
-        role =
+        roleHint =
           String(payload.org_role ?? '').includes('admin') || payload['role'] === 'OWNER'
             ? UserRole.OWNER
             : UserRole.STAFF;
+        email = payload['email'] ? String(payload['email']) : undefined;
+        name = payload['name'] ? String(payload['name']) : undefined;
       } catch (err) {
         this.logger.warn(`Token verification failed: ${(err as Error).message}`);
         throw new UnauthorizedException('Invalid token');
       }
       if (!clerkOrgId) throw new UnauthorizedException('No active organization');
+      if (!clerkUserId) throw new UnauthorizedException('Token has no subject');
     }
 
-    const rows = await this.prisma.client.$queryRaw<{ resolve_tenant_id: string | null }[]>`
-      SELECT resolve_tenant_id(${clerkOrgId}) AS resolve_tenant_id
-    `;
-    const tenantId = rows[0]?.resolve_tenant_id ?? null;
-    if (!tenantId) throw new UnauthorizedException('Tenant not provisioned for organization');
+    // Provisions on first sight, so a customer who has just finished sign-up is
+    // never told their organization does not exist while the webhook catches up.
+    const { tenantId, role } = await this.provisioning.authorize({
+      clerkOrgId,
+      clerkUserId,
+      roleHint,
+      email,
+      name,
+    });
 
     req.auth = { tenantId, clerkOrgId, clerkUserId, role };
     return true;
+  }
+}
+
+/**
+ * Boot-time configuration check. Called before the server starts listening so a
+ * dangerous combination fails visibly at deploy rather than silently in traffic.
+ */
+export function assertAuthConfigIsSafe(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  if (process.env.DISABLE_AUTH === 'true') {
+    throw new Error(
+      'DISABLE_AUTH=true is not permitted when NODE_ENV=production. It would accept ' +
+        'any caller-supplied organization header as authentication. Unset it and redeploy.',
+    );
+  }
+  if (!process.env.CLERK_SECRET_KEY) {
+    throw new Error('CLERK_SECRET_KEY is required in production; tokens cannot be verified.');
+  }
+  if (!process.env.INTAKE_HMAC_SECRET) {
+    throw new Error('INTAKE_HMAC_SECRET is required in production to sign intake webhooks.');
   }
 }

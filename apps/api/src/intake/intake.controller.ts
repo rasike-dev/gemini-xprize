@@ -3,31 +3,43 @@ import {
   Body,
   Controller,
   Headers,
+  Logger,
   Post,
+  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
-import { Req } from '@nestjs/common';
 import { AgentType, intakeMessageSchema, type IntakeMessage } from '@ledgerpilot/shared';
 import { Public } from '../auth/decorators.js';
+import { AllowInactive } from '../billing/entitlements.decorators.js';
 import { ZodPipe } from '../common/zod.pipe.js';
+import { deriveIntakeSecret } from '../common/intake-secret.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AgentRunsService } from '../agent-runs/agent-runs.service.js';
+import { EntitlementsService } from '../billing/entitlements.service.js';
 import { Throttle } from '@nestjs/throttler';
 
 /**
- * Inbound inquiry webhook (simulated WhatsApp/email for the MVP). Authenticated
- * by a per-tenant HMAC over the raw body + an idempotency key. On success:
- * persist the Inquiry, then create + enqueue an INQUIRY AgentRun.
+ * Inbound inquiry webhook (WhatsApp/email forwarding). Authenticated by a
+ * per-tenant HMAC over the raw body, plus an idempotency key.
  *
- * Header: x-ledgerpilot-org (clerk org id), x-ledgerpilot-signature (hex HMAC).
+ * The signing secret is derived per tenant rather than shared. With one global
+ * secret, anyone holding it could post inquiries into any organization simply by
+ * changing the `x-ledgerpilot-org` header, which is a multi-tenancy hole rather
+ * than merely untidy.
+ *
+ * Headers: x-ledgerpilot-org (clerk org id), x-ledgerpilot-signature (hex HMAC).
  */
 @Controller('intake')
+@AllowInactive()
 export class IntakeController {
+  private readonly logger = new Logger(IntakeController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentRuns: AgentRunsService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   @Public()
@@ -40,15 +52,19 @@ export class IntakeController {
     @Body(new ZodPipe(intakeMessageSchema)) body: IntakeMessage,
   ) {
     if (!clerkOrgId) throw new BadRequestException('Missing org header');
-    this.verifySignature(req.rawBody, signature);
 
     const rows = await this.prisma.client.$queryRaw<{ resolve_tenant_id: string | null }[]>`
       SELECT resolve_tenant_id(${clerkOrgId}) AS resolve_tenant_id
     `;
     const tenantId = rows[0]?.resolve_tenant_id;
-    if (!tenantId) throw new BadRequestException('Unknown organization');
+    // Same error for an unknown org as for a bad signature, so this endpoint
+    // cannot be used to discover which organizations exist.
+    if (!tenantId) throw new UnauthorizedException('Bad signature');
 
-    // Idempotent inquiry insert (unique on tenantId + idempotencyKey).
+    this.verifySignature(tenantId, req.rawBody, signature);
+
+    // The inquiry is stored regardless of plan state, so nothing a customer sent
+    // is ever lost. Only the AI processing is gated.
     const inquiry = await this.prisma.forTenant(tenantId, async (tx) => {
       const existing = await tx.inquiry.findUnique({
         where: {
@@ -70,6 +86,17 @@ export class IntakeController {
       });
     });
 
+    const state = await this.entitlements.getState(tenantId);
+    if (!state.active) {
+      this.logger.log(`Inquiry ${inquiry.id} stored without processing: ${state.reason}`);
+      return {
+        inquiryId: inquiry.id,
+        agentRunId: null,
+        status: 'NOT_PROCESSED',
+        detail: state.reason,
+      };
+    }
+
     const run = await this.agentRuns.createAndEnqueue({
       tenantId,
       agentType: AgentType.INQUIRY,
@@ -81,12 +108,25 @@ export class IntakeController {
     return { inquiryId: inquiry.id, agentRunId: run.id, status: run.status };
   }
 
-  private verifySignature(rawBody: Buffer | undefined, signature: string | undefined) {
-    const secret = process.env.INTAKE_HMAC_SECRET;
-    // In dev without a secret we skip; production always sets one.
-    if (!secret) return;
+  private verifySignature(
+    tenantId: string,
+    rawBody: Buffer | undefined,
+    signature: string | undefined,
+  ) {
+    // Only skippable in local development. assertAuthConfigIsSafe refuses to boot
+    // in production without INTAKE_HMAC_SECRET.
+    if (!process.env.INTAKE_HMAC_SECRET) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new UnauthorizedException('Intake signing is not configured');
+      }
+      return;
+    }
+
     if (!rawBody || !signature) throw new UnauthorizedException('Missing signature');
-    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+
+    const expected = createHmac('sha256', deriveIntakeSecret(tenantId))
+      .update(rawBody)
+      .digest('hex');
     const a = Buffer.from(expected);
     const b = Buffer.from(signature);
     if (a.length !== b.length || !timingSafeEqual(a, b)) {

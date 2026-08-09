@@ -45,9 +45,9 @@ cp .env.example .env                      # fill in or leave defaults for offlin
 pnpm install
 pnpm --filter @ledgerpilot/db generate
 
-# create schema + RLS (point DATABASE_URL at your Postgres)
-pnpm --filter @ledgerpilot/db exec prisma db push --skip-generate
-psql "$DATABASE_URL" -f packages/db/prisma/sql/rls.sql
+# create the runtime app role, then apply migrations (schema + RLS policies)
+psql "$DATABASE_URL" -f packages/db/prisma/sql/app-role.sql
+pnpm --filter @ledgerpilot/db exec prisma migrate deploy
 
 pnpm --filter @ledgerpilot/db seed        # demo tenant: PrintPro Lanka
 pnpm --filter @ledgerpilot/worker smoke   # runs the full agent pipeline end-to-end
@@ -118,7 +118,14 @@ PROJECT_ID=ledgerpilot-prod REGION=asia-south1 pnpm deploy:verify
 # unit tests + API e2e (requires api + worker running for e2e)
 pnpm --filter @ledgerpilot/shared test
 pnpm --filter @ledgerpilot/ai test
+pnpm --filter @ledgerpilot/api test   # billing, entitlements, invoice money paths
 pnpm test:e2e
 ```
+
+## Operator docs
+
+- [docs/LAUNCH-CHECKLIST.md](docs/LAUNCH-CHECKLIST.md) — code to first paying customer
+- [docs/PAYHERE-PLUS-MIGRATION.md](docs/PAYHERE-PLUS-MIGRATION.md) — moving to automatic renewal
+- [docs/WHATSAPP-BSP-EVALUATION.md](docs/WHATSAPP-BSP-EVALUATION.md) — why we stay on `wa.me` links for now
 
 See `.cursor/plans` for the full hackathon strategy and production-readiness plan.

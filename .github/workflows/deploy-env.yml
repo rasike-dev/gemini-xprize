@@ -1,0 +1,106 @@
+name: Deploy to environment
+
+# Reusable: build images, migrate, apply Terraform, verify. Called once per
+# environment by deploy.yml so staging and production follow exactly the same
+# path and a production-only surprise is much less likely.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      tag:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Repository settings decide whether this environment needs a reviewer.
+    environment: ${{ inputs.environment }}
+
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      TAG: ${{ inputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Keyless auth via Workload Identity Federation. A JSON key in a repository
+      # secret would be a permanent credential to the production project.
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push images
+        env:
+          # NEXT_PUBLIC_* are inlined into the web bundle at build time, so they
+          # have to be present here rather than on the Cloud Run service.
+          NEXT_PUBLIC_API_URL: ${{ vars.API_DOMAIN }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.WEB_DOMAIN }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BUSINESS_NAME: ${{ vars.BUSINESS_NAME }}
+          NEXT_PUBLIC_BUSINESS_EMAIL: ${{ vars.BUSINESS_EMAIL }}
+          NEXT_PUBLIC_BUSINESS_PHONE: ${{ vars.BUSINESS_PHONE }}
+          NEXT_PUBLIC_BUSINESS_ADDRESS: ${{ vars.BUSINESS_ADDRESS }}
+          NEXT_PUBLIC_BUSINESS_REG_NO: ${{ vars.BUSINESS_REG_NO }}
+        run: ./infra/scripts/build-and-push-images.sh
+
+      - name: Apply Terraform
+        working-directory: infra/terraform
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_environment: ${{ inputs.environment == 'production' && 'prod' || 'staging' }}
+          TF_VAR_web_domain: ${{ vars.WEB_DOMAIN }}
+          TF_VAR_api_domain: ${{ vars.API_DOMAIN }}
+          TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+          TF_VAR_clerk_publishable_key: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+          TF_VAR_payhere_merchant_id: ${{ vars.PAYHERE_MERCHANT_ID }}
+          TF_VAR_payhere_sandbox: ${{ vars.PAYHERE_SANDBOX }}
+          # LITE by default; set the repo variable to PLUS after upgrading the
+          # PayHere account. See docs/PAYHERE-PLUS-MIGRATION.md.
+          TF_VAR_payhere_merchant_plan: ${{ vars.PAYHERE_MERCHANT_PLAN || 'LITE' }}
+          TF_VAR_payhere_app_id: ${{ vars.PAYHERE_APP_ID }}
+          TF_VAR_min_instances: ${{ inputs.environment == 'production' && 1 || 0 }}
+          TF_VAR_api_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/api:${{ inputs.tag }}
+          TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/worker:${{ inputs.tag }}
+          TF_VAR_web_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/web:${{ inputs.tag }}
+        run: |
+          terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="prefix=${{ inputs.environment }}"
+          terraform apply -auto-approve
+
+      # Migrations run after Terraform, because Terraform creates the database
+      # role that the RLS migration grants privileges to.
+      - name: Migrate database
+        env:
+          CLOUDSQL_CONNECTION_NAME: ${{ vars.CLOUDSQL_CONNECTION_NAME }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          curl -sSLo /usr/local/bin/cloud-sql-proxy \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.1/cloud-sql-proxy.linux.amd64
+          chmod +x /usr/local/bin/cloud-sql-proxy
+          ./infra/scripts/cloudsql-migrate-seed.sh
+
+      - name: Verify the deployment
+        run: ./infra/scripts/verify-cloud-run.sh

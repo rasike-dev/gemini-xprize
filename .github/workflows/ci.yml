@@ -44,17 +44,33 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @ledgerpilot/db generate
 
-      - name: Push schema + apply RLS
+      # Deliberately `migrate deploy` and not `db push`: this is exactly what runs
+      # against production, so a broken or missing migration fails here instead of
+      # during a deploy. RLS comes with the migrations.
+      - name: Migrate database
         run: |
-          pnpm --filter @ledgerpilot/db exec prisma db push --skip-generate
-          psql "$DATABASE_URL" -f packages/db/prisma/sql/rls.sql
+          psql "$DATABASE_URL" -f packages/db/prisma/sql/app-role.sql
+          pnpm --filter @ledgerpilot/db exec prisma migrate deploy
           pnpm --filter @ledgerpilot/db seed
+
+      - name: Check migrations match the schema
+        run: |
+          pnpm --filter @ledgerpilot/db exec prisma migrate diff \
+            --from-schema-datasource prisma/schema.prisma \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code || {
+              echo "schema.prisma has changes with no migration. Run: pnpm db:migrate"
+              exit 1
+            }
 
       - name: Build
         run: pnpm build
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
 
       - name: End-to-end smoke test (offline AI)
         run: pnpm --filter @ledgerpilot/worker smoke
@@ -63,6 +79,7 @@ jobs:
         run: |
           pnpm --filter @ledgerpilot/shared test
           pnpm --filter @ledgerpilot/ai test
+          pnpm --filter @ledgerpilot/api test
 
       - name: Build API and worker for e2e
         run: |

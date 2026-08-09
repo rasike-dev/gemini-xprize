@@ -51,6 +51,24 @@ export const PlanTier = {
 } as const;
 export type PlanTier = (typeof PlanTier)[keyof typeof PlanTier];
 
+export const SubscriptionStatus = {
+  /** Free trial, gated by Subscription.trialEndsAt. */
+  TRIALING: 'TRIALING',
+  /** Paid and inside the paid period. */
+  ACTIVE: 'ACTIVE',
+  /** Period lapsed without renewal; read-only grace state. */
+  PAST_DUE: 'PAST_DUE',
+  /** Cancelled by the customer or by us. */
+  CANCELED: 'CANCELED',
+} as const;
+export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
+
+export const BillingProvider = {
+  PAYHERE: 'PAYHERE',
+  STRIPE: 'STRIPE',
+} as const;
+export type BillingProvider = (typeof BillingProvider)[keyof typeof BillingProvider];
+
 export const IntakeChannel = {
   WHATSAPP: 'WHATSAPP',
   EMAIL: 'EMAIL',

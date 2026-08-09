@@ -1,47 +1,54 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/toast';
+import { UPGRADE_REQUIRED } from '@/lib/client';
 
-async function download(format: 'csv' | 'pdf') {
-  const res = await fetch(`/api/reports/export?format=${format}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) {
-    throw new Error(`Export failed (${res.status})`);
+interface ExportPayload {
+  filename: string;
+  mimeType: string;
+  content?: string;
+  base64?: string;
+}
+
+function toBlob(payload: ExportPayload): Blob {
+  if (payload.base64 != null) {
+    const bytes = Uint8Array.from(atob(payload.base64), (c) => c.charCodeAt(0));
+    return new Blob([bytes], { type: payload.mimeType });
   }
-  const payload = (await res.json()) as {
-    filename: string;
-    mimeType: string;
-    content?: string;
-    base64?: string;
-  };
+  return new Blob([payload.content ?? ''], { type: payload.mimeType });
+}
 
-  const blob =
-    payload.base64 != null
-      ? new Blob([Uint8Array.from(atob(payload.base64), (c) => c.charCodeAt(0))], {
-          type: payload.mimeType,
-        })
-      : new Blob([payload.content ?? ''], { type: payload.mimeType });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = payload.filename;
-  a.click();
+function triggerDownload(payload: ExportPayload) {
+  const url = URL.createObjectURL(toBlob(payload));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = payload.filename;
+  anchor.click();
   URL.revokeObjectURL(url);
 }
 
 export function ReportExportButtons() {
   const [busy, setBusy] = useState<'csv' | 'pdf' | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
   async function handle(format: 'csv' | 'pdf') {
     setBusy(format);
-    setError(null);
     try {
-      await download(format);
-    } catch (e) {
-      setError((e as Error).message);
+      const res = await fetch(`/api/lp/reports/export?format=${format}`, { cache: 'no-store' });
+
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => null)) as { message?: string } | null;
+        const message = detail?.message ?? `Export failed (${res.status})`;
+        if (res.status === UPGRADE_REQUIRED) toast.upgrade(message);
+        else toast.error(message);
+        return;
+      }
+
+      triggerDownload((await res.json()) as ExportPayload);
+      toast.success(`${format.toUpperCase()} downloaded.`);
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setBusy(null);
     }
@@ -53,19 +60,18 @@ export function ReportExportButtons() {
         type="button"
         onClick={() => void handle('csv')}
         disabled={busy !== null}
-        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
       >
-        {busy === 'csv' ? 'Exporting CSV...' : 'Export CSV'}
+        {busy === 'csv' ? 'Exporting…' : 'Export CSV'}
       </button>
       <button
         type="button"
         onClick={() => void handle('pdf')}
         disabled={busy !== null}
-        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 disabled:opacity-60"
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60"
       >
-        {busy === 'pdf' ? 'Exporting PDF...' : 'Export PDF'}
+        {busy === 'pdf' ? 'Exporting…' : 'Export PDF'}
       </button>
-      {error ? <span className="text-xs text-rose-600">{error}</span> : null}
     </div>
   );
 }
