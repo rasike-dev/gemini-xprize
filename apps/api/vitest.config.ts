@@ -32,5 +32,28 @@ export default defineConfig({
     // @nestjs/core's Reflector and SetMetadata both need the metadata polyfill.
     setupFiles: ['reflect-metadata'],
     environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'json-summary'],
+      reportsDirectory: './coverage',
+      // Gate business logic covered by the Week 1 service specs.
+      include: [
+        'src/**/*.service.ts',
+        'src/billing/entitlements.guard.ts',
+        'src/common/intake-secret.ts',
+      ],
+      exclude: [
+        'src/prisma/prisma.service.ts',
+        'src/queue/tasks.service.ts',
+        'src/common/audit-log.service.ts',
+        'src/tenant/tenant-provisioning.service.ts',
+      ],
+      thresholds: {
+        lines: 75,
+        statements: 75,
+        branches: 80,
+        functions: 70,
+      },
+    },
   },
 });

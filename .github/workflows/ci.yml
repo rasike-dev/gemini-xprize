@@ -32,7 +32,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.26.0
 
       - uses: actions/setup-node@v4
         with:
@@ -79,8 +79,8 @@ jobs:
         run: |
           pnpm --filter @ledgerpilot/shared test
           pnpm --filter @ledgerpilot/ai test
-          pnpm --filter @ledgerpilot/api test
-          pnpm --filter @ledgerpilot/web test
+          pnpm --filter @ledgerpilot/api test:coverage
+          pnpm --filter @ledgerpilot/web test:coverage
 
       - name: Build API and worker for e2e
         run: |

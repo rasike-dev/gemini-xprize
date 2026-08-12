@@ -13,6 +13,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test && pnpm test:e2e",
+    "test:coverage": "pnpm --filter @ledgerpilot/api test:coverage && pnpm --filter @ledgerpilot/web test:coverage",
     "test:e2e": "playwright test",
     "db:generate": "pnpm --filter @ledgerpilot/db generate",
     "db:migrate": "pnpm --filter @ledgerpilot/db migrate",
