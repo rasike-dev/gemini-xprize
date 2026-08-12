@@ -19,6 +19,29 @@ export function apiUrl(path: string): string {
   return `${API_URL}/api${path}`;
 }
 
+/** Resources the browser proxy may forward to the API. */
+const ALLOWED_LP_RESOURCES = new Set([
+  'agent-runs',
+  'billing',
+  'customers',
+  'invoices',
+  'quotes',
+  'reminders',
+  'reports',
+  'tenant',
+]);
+
+/**
+ * Validates a /api/lp path before forwarding. Returns the API path or null when
+ * the resource is not on the allowlist or the path looks like traversal.
+ */
+export function resolveLpTargetPath(path: string[], search = ''): string | null {
+  const [resource] = path;
+  if (!resource || !ALLOWED_LP_RESOURCES.has(resource)) return null;
+  if (path.some((segment) => segment === '..' || segment.includes('/'))) return null;
+  return `/${path.join('/')}${search}`;
+}
+
 /**
  * Forwards a browser request to the API with server-side auth attached, and
  * relays the response verbatim. Status codes matter here: the entitlement guard

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { proxyRequest } from '../../_proxy';
+import { proxyRequest, resolveLpTargetPath } from '../../_proxy';
 
 /**
  * Single authenticated pass-through to the LedgerPilot API for browser-initiated
@@ -11,32 +11,9 @@ import { proxyRequest } from '../../_proxy';
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
-/**
- * API resources the dashboard is allowed to reach through here.
- *
- * Without this the proxy would happily forward a signed-in browser session to
- * /webhooks/* or /intake, which authenticate by signature and have no business
- * being callable from a browser at all.
- */
-const ALLOWED_RESOURCES = new Set([
-  'agent-runs',
-  'billing',
-  'customers',
-  'invoices',
-  'quotes',
-  'reminders',
-  'reports',
-  'tenant',
-]);
-
 async function targetPath(req: NextRequest, ctx: Ctx): Promise<string | null> {
   const { path } = await ctx.params;
-  const [resource] = path;
-  if (!resource || !ALLOWED_RESOURCES.has(resource)) return null;
-  // Path segments arrive decoded, so a traversal attempt would show up here.
-  if (path.some((segment) => segment === '..' || segment.includes('/'))) return null;
-
-  return `/${path.join('/')}${new URL(req.url).search}`;
+  return resolveLpTargetPath(path, new URL(req.url).search);
 }
 
 function notAllowed(): NextResponse {

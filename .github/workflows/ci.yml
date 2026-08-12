@@ -80,6 +80,7 @@ jobs:
           pnpm --filter @ledgerpilot/shared test
           pnpm --filter @ledgerpilot/ai test
           pnpm --filter @ledgerpilot/api test
+          pnpm --filter @ledgerpilot/web test
 
       - name: Build API and worker for e2e
         run: |
@@ -89,14 +90,37 @@ jobs:
           pnpm --filter @ledgerpilot/worker build
 
       - name: Start API and worker
+        env:
+          INTAKE_HMAC_SECRET: dev-intake-secret-change-me
         run: |
-          DATABASE_URL="$DATABASE_URL" TASKS_DRIVER=inline DISABLE_AUTH=true WORKER_URL=http://127.0.0.1:8081 PORT=8080 node apps/api/dist/main.js > /tmp/api.log 2>&1 &
+          DATABASE_URL="$DATABASE_URL" TASKS_DRIVER=inline DISABLE_AUTH=true WORKER_URL=http://127.0.0.1:8081 INTAKE_HMAC_SECRET=dev-intake-secret-change-me PORT=8080 node apps/api/dist/main.js > /tmp/api.log 2>&1 &
           DATABASE_URL="$DATABASE_URL" TASKS_DRIVER=inline WORKER_PORT=8081 node apps/worker/dist/main.js > /tmp/worker.log 2>&1 &
           sleep 6
           curl -f http://127.0.0.1:8080/health
           curl -f http://127.0.0.1:8081/health
 
-      - name: Playwright API e2e
+      - name: Start web app
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:8080
+          DEV_ORG_ID: org_demo_printpro
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ''
+          CLERK_SECRET_KEY: ''
+          PORT: '3000'
+          HOSTNAME: '127.0.0.1'
+        run: |
+          chmod +x scripts/start-web-e2e.sh
+          ./scripts/start-web-e2e.sh > /tmp/web.log 2>&1 &
+          sleep 5
+          curl -f -o /dev/null -s -w "%{http_code}" http://127.0.0.1:3000/app | grep -E '^200$'
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Playwright e2e
+        env:
+          E2E_API_URL: http://127.0.0.1:8080
+          E2E_WEB_URL: http://127.0.0.1:3000
+          INTAKE_HMAC_SECRET: dev-intake-secret-change-me
         run: pnpm test:e2e
 
       - name: Dump logs on failure
@@ -106,3 +130,5 @@ jobs:
           cat /tmp/api.log || true
           echo "=== WORKER LOG ==="
           cat /tmp/worker.log || true
+          echo "=== WEB LOG ==="
+          cat /tmp/web.log || true

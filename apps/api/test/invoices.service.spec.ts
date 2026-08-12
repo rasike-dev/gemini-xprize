@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { InvoiceStatus } from '@ledgerpilot/shared';
+import { InvoiceStatus, QuoteStatus } from '@ledgerpilot/shared';
 import { InvoicesService } from '../src/invoices/invoices.service.js';
 import {
   createFakeAudit,
   createFakePrisma,
+  customerFixture,
   emptyState,
+  quoteFixture,
   tenantFixture,
   type FakeInvoice,
+  type FakeQuoteLine,
   type FakeState,
 } from './fake-prisma.js';
 import type { AuditLogService } from '../src/common/audit-log.service.js';
@@ -138,5 +141,88 @@ describe('voiding an invoice', () => {
       /credit note/,
     );
     expect(state.invoices[0]!.status).toBe(InvoiceStatus.SENT);
+  });
+});
+
+describe('creating an invoice', () => {
+  it('creates a DRAFT with correct totals and audit', async () => {
+    const { service, state, audit } = build({
+      invoices: [],
+      customers: [customerFixture()],
+    });
+
+    const created = await service.create(
+      'tenant_1',
+      {
+        customerId: 'cust_1',
+        currency: 'LKR',
+        lines: [
+          { description: 'Flyers', quantity: 100, unitPriceMinor: 5000, taxRatePct: 18 },
+          { description: 'Design', quantity: 1, unitPriceMinor: 50_000, taxRatePct: 0 },
+        ],
+      },
+      'owner',
+    );
+
+    expect(created.status).toBe(InvoiceStatus.DRAFT);
+    expect(created.subtotalMinor).toBe(100 * 5000 + 50_000);
+    expect(created.totalMinor).toBeGreaterThan(created.subtotalMinor);
+    expect(state.invoices).toHaveLength(1);
+    expect(audit.entries).toEqual([
+      expect.objectContaining({
+        event: 'invoice_created',
+        payload: expect.objectContaining({ actor: 'owner', invoiceId: created.id }),
+      }),
+    ]);
+  });
+});
+
+describe('createFromQuote', () => {
+  const quoteLines: FakeQuoteLine[] = [
+    {
+      id: 'ql_1',
+      tenantId: 'tenant_1',
+      quoteId: 'quote_1',
+      description: 'Banners',
+      quantity: 2,
+      unitPriceMinor: 100_000,
+      taxRatePct: 18,
+      totalMinor: 236_000,
+    },
+  ];
+
+  it('copies quote lines into a new SENT invoice', async () => {
+    const { service, state } = build({
+      invoices: [],
+      customers: [customerFixture()],
+      quotes: [quoteFixture({ status: QuoteStatus.ACCEPTED })],
+      quoteLines,
+    });
+
+    const created = await service.createFromQuote('tenant_1', 'quote_1');
+
+    expect(created.status).toBe('SENT');
+    expect(created.quoteId).toBe('quote_1');
+    expect(created.lines).toHaveLength(1);
+    expect(created.lines![0]).toMatchObject({ description: 'Banners', quantity: 2 });
+    expect(state.invoices).toHaveLength(1);
+  });
+
+  it('throws NotFound for a missing quote', async () => {
+    const { service } = build({ invoices: [], quotes: [] });
+
+    await expect(service.createFromQuote('tenant_1', 'missing')).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws Conflict when the quote was already invoiced', async () => {
+    const { service } = build({
+      customers: [customerFixture()],
+      quotes: [quoteFixture()],
+      quoteLines,
+      invoices: [invoice({ id: 'inv_existing', quoteId: 'quote_1' })],
+    });
+
+    await expect(service.createFromQuote('tenant_1', 'quote_1')).rejects.toThrow(BadRequestException);
+    await expect(service.createFromQuote('tenant_1', 'quote_1')).rejects.toThrow(/already invoiced/);
   });
 });

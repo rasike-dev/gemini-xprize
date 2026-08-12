@@ -1,8 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { createHmac } from 'node:crypto';
 
+/** Demo tenant from packages/db/src/seed.ts — matches org_demo_printpro. */
+const DEMO_TENANT_ID = 'f7f7ecf3-f566-4df7-94f5-9f5504f9699c';
+
+function deriveIntakeSecret(tenantId: string): string {
+  const master = process.env.INTAKE_HMAC_SECRET ?? 'dev-intake-secret-change-me';
+  return createHmac('sha256', master).update(`intake:${tenantId}`).digest('hex');
+}
+
 test('inquiry to agent-run pipeline creates inquiry and quote runs', async ({ request }) => {
-  const secret = process.env.INTAKE_HMAC_SECRET ?? 'dev-intake-secret-change-me';
   const body = {
     channel: 'WHATSAPP',
     from: '+94770002222',
@@ -11,7 +18,9 @@ test('inquiry to agent-run pipeline creates inquiry and quote runs', async ({ re
     idempotencyKey: `e2e-${Date.now()}`,
   };
   const raw = JSON.stringify(body);
-  const signature = createHmac('sha256', secret).update(raw).digest('hex');
+  const signature = createHmac('sha256', deriveIntakeSecret(DEMO_TENANT_ID))
+    .update(raw)
+    .digest('hex');
 
   const intake = await request.post('/api/intake', {
     headers: {
