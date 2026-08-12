@@ -11,6 +11,7 @@ import type { Request } from 'express';
 import { UserRole } from '@ledgerpilot/shared';
 import { TenantProvisioningService } from '../tenant/tenant-provisioning.service.js';
 import { IS_PUBLIC_KEY } from './decorators.js';
+import { clerkOrgIdFromToken, clerkRoleHintFromToken } from './clerk-claims.js';
 
 /** True only when dev-header auth is both requested and permitted. */
 export function devAuthEnabled(): boolean {
@@ -62,12 +63,9 @@ export class ClerkAuthGuard implements CanActivate {
           secretKey: process.env.CLERK_SECRET_KEY,
           authorizedParties: undefined,
         });
-        clerkOrgId = String(payload.org_id ?? payload['orgId'] ?? '');
+        clerkOrgId = clerkOrgIdFromToken(payload as Record<string, unknown>);
         clerkUserId = String(payload.sub ?? '');
-        roleHint =
-          String(payload.org_role ?? '').includes('admin') || payload['role'] === 'OWNER'
-            ? UserRole.OWNER
-            : UserRole.STAFF;
+        roleHint = clerkRoleHintFromToken(payload as Record<string, unknown>);
         email = payload['email'] ? String(payload['email']) : undefined;
         name = payload['name'] ? String(payload['name']) : undefined;
       } catch (err) {

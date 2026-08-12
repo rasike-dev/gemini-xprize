@@ -37,7 +37,7 @@ export class TenantController {
     @Auth() auth: AuthContext,
     @Body(new ZodPipe(updateTenantSchema)) body: z.infer<typeof updateTenantSchema>,
   ) {
-    return this.tenant.update(auth.tenantId, body, auth.clerkUserId);
+    return this.tenant.update(auth.tenantId, body, auth.clerkUserId, auth.clerkOrgId);
   }
 
   @Get('integration')

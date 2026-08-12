@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/main.ts",
-    "start": "node dist/main.js",
+    "dev": "node ../../scripts/with-root-env.mjs node node_modules/tsx/dist/cli.mjs watch src/main.ts",
+    "start": "node ../../scripts/with-root-env.mjs node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "echo \"(lint) worker\"",
-    "smoke": "tsx src/smoke.ts"
+    "smoke": "node ../../scripts/with-root-env.mjs node node_modules/tsx/dist/cli.mjs src/smoke.ts"
   },
   "dependencies": {
     "@sentry/node": "^8.43.0",

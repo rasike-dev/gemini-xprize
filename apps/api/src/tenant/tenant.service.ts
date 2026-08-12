@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditLogService } from '../common/audit-log.service.js';
 import { deriveIntakeSecret } from '../common/intake-secret.js';
 import { EntitlementsService } from '../billing/entitlements.service.js';
+import { ClerkAdminService } from '../clerk/clerk-admin.service.js';
 
 export interface TenantSettingsInput {
   name?: string;
@@ -18,6 +19,7 @@ export class TenantService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditLogService,
     private readonly entitlements: EntitlementsService,
+    private readonly clerk: ClerkAdminService,
   ) {}
 
   async get(tenantId: string) {
@@ -37,7 +39,12 @@ export class TenantService {
     };
   }
 
-  async update(tenantId: string, input: TenantSettingsInput, actor: string) {
+  async update(
+    tenantId: string,
+    input: TenantSettingsInput,
+    actor: string,
+    clerkOrgId?: string,
+  ) {
     // Automatic sending lets the AI message customers unsupervised, so it is a
     // paid feature and must be checked before it can be switched on.
     if (input.autoSend === true) {
@@ -62,6 +69,11 @@ export class TenantService {
       actor,
       fields: Object.keys(input),
     });
+
+    if (input.name !== undefined && clerkOrgId) {
+      await this.clerk.syncOrganizationName(clerkOrgId, input.name);
+    }
+
     return this.get(updated.id);
   }
 

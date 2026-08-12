@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { PlanTier, SubscriptionStatus } from '@ledgerpilot/shared';
 import { TenantService } from '../src/tenant/tenant.service.js';
@@ -14,6 +14,7 @@ import {
   type FakeSubscription,
 } from './fake-prisma.js';
 import type { AuditLogService } from '../src/common/audit-log.service.js';
+import type { ClerkAdminService } from '../src/clerk/clerk-admin.service.js';
 
 function subscription(overrides: Partial<FakeSubscription> = {}): FakeSubscription {
   return {
@@ -46,12 +47,14 @@ function build(state: Partial<FakeState> = {}) {
   const audit = createFakeAudit();
   const prisma = createFakePrisma(full);
   const entitlements = new EntitlementsService(prisma);
+  const clerk = { syncOrganizationName: vi.fn().mockResolvedValue(undefined) };
   const service = new TenantService(
     prisma,
     audit.service as unknown as AuditLogService,
     entitlements,
+    clerk as unknown as ClerkAdminService,
   );
-  return { service, state: full, audit };
+  return { service, state: full, audit, clerk };
 }
 
 describe('TenantService', () => {
@@ -83,16 +86,18 @@ describe('TenantService', () => {
   });
 
   it('updates profile fields and audits the change', async () => {
-    const { service, state, audit } = build();
+    const { service, state, audit, clerk } = build();
 
     const updated = await service.update(
       'tenant_1',
       { name: 'PrintPro Updated', currency: 'USD', vatNumber: 'VAT-99' },
       'owner',
+      'org_demo_printpro',
     );
 
     expect(updated.name).toBe('PrintPro Updated');
     expect(state.tenants[0]).toMatchObject({ currency: 'USD', vatNumber: 'VAT-99' });
+    expect(clerk.syncOrganizationName).toHaveBeenCalledWith('org_demo_printpro', 'PrintPro Updated');
     expect(audit.entries).toEqual([
       expect.objectContaining({
         event: 'tenant_settings_updated',
