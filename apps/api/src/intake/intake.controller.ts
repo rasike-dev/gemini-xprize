@@ -26,10 +26,10 @@ import { Throttle } from '@nestjs/throttler';
  *
  * The signing secret is derived per tenant rather than shared. With one global
  * secret, anyone holding it could post inquiries into any organization simply by
- * changing the `x-ledgerpilot-org` header, which is a multi-tenancy hole rather
+ * changing the `x-bizopsmate-org` header, which is a multi-tenancy hole rather
  * than merely untidy.
  *
- * Headers: x-ledgerpilot-org (clerk org id), x-ledgerpilot-signature (hex HMAC).
+ * Headers: x-bizopsmate-org (clerk org id), x-bizopsmate-signature (hex HMAC).
  */
 @Controller('intake')
 @AllowInactive()
@@ -47,8 +47,8 @@ export class IntakeController {
   @Post()
   async ingest(
     @Req() req: Request,
-    @Headers('x-ledgerpilot-org') clerkOrgId: string | undefined,
-    @Headers('x-ledgerpilot-signature') signature: string | undefined,
+    @Headers('x-bizopsmate-org') clerkOrgId: string | undefined,
+    @Headers('x-bizopsmate-signature') signature: string | undefined,
     @Body(new ZodPipe(intakeMessageSchema)) body: IntakeMessage,
   ) {
     if (!clerkOrgId) throw new BadRequestException('Missing org header');

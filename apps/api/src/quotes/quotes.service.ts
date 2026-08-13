@@ -156,7 +156,7 @@ export class QuotesService {
       }),
     );
 
-    const businessName = tenant?.name ?? 'LedgerPilot';
+    const businessName = tenant?.name ?? 'BizOpsMate';
     const rendered = quoteEmail({
       businessName,
       customerName: quote.customer.name,

@@ -1,4 +1,4 @@
-# LedgerPilot AI
+# BizOpsMate AI
 
 An AI finance & operations agent for small businesses. It turns customer
 inquiries into quotes, invoices, payment reminders, and cash-flow insights, with
@@ -75,8 +75,8 @@ BODY='{"channel":"WHATSAPP","from":"+94771234567","fromName":"Acme",
 SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$INTAKE_HMAC_SECRET" | awk '{print $2}')
 curl -X POST http://localhost:8080/api/intake \
   -H 'content-type: application/json' \
-  -H 'x-ledgerpilot-org: org_demo_printpro' \
-  -H "x-ledgerpilot-signature: $SIG" \
+  -H 'x-bizopsmate-org: org_demo_printpro' \
+  -H "x-bizopsmate-signature: $SIG" \
   -d "$BODY"
 ```
 
@@ -85,8 +85,8 @@ Then watch the dashboard's **AI Agent Log** populate.
 ## Deploy (Google Cloud)
 
 ```bash
-PROJECT_ID=ledgerpilot-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:images
-PROJECT_ID=ledgerpilot-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:infra
+PROJECT_ID=bizopsmate-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:images
+PROJECT_ID=bizopsmate-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) pnpm deploy:infra
 ```
 
 Then set secret values in Secret Manager (`DATABASE_APP_URL`, `CLERK_SECRET_KEY`,
@@ -95,13 +95,13 @@ Then set secret values in Secret Manager (`DATABASE_APP_URL`, `CLERK_SECRET_KEY`
 You can populate them from an env file:
 
 ```bash
-PROJECT_ID=ledgerpilot-prod ENV_FILE=.env.production pnpm deploy:secrets
+PROJECT_ID=bizopsmate-prod ENV_FILE=.env.production pnpm deploy:secrets
 ```
 
 Apply DB migrations + RLS + seed against Cloud SQL:
 
 ```bash
-CLOUDSQL_CONNECTION_NAME=project:region:ledgerpilot-pg \
+CLOUDSQL_CONNECTION_NAME=project:region:bizopsmate-pg \
 DATABASE_URL='postgresql://ledgerpilot:<password>@127.0.0.1:5432/ledgerpilot?schema=public' \
 pnpm deploy:db
 ```
@@ -109,7 +109,7 @@ pnpm deploy:db
 Verify deployed services:
 
 ```bash
-PROJECT_ID=ledgerpilot-prod REGION=asia-south1 pnpm deploy:verify
+PROJECT_ID=bizopsmate-prod REGION=asia-south1 pnpm deploy:verify
 ```
 
 ## Tests

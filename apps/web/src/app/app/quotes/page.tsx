@@ -4,7 +4,7 @@ import type { CustomerRow, QuoteRow, TenantProfile } from '@/lib/types';
 import { PageHeader } from '@/components/ui';
 import { QuotesTable } from '@/components/quotes-table';
 
-export const metadata: Metadata = { title: 'Quotes — LedgerPilot AI' };
+export const metadata: Metadata = { title: 'Quotes — BizOpsMate AI' };
 
 export default async function QuotesPage() {
   const [quotes, customers, tenant] = await Promise.all([

@@ -9,7 +9,7 @@ locals {
 
 # --- Worker (private: only Cloud Tasks + Scheduler may invoke) ---
 resource "google_cloud_run_v2_service" "worker" {
-  name     = "ledgerpilot-worker"
+  name     = "bizopsmate-worker"
   location = var.region
 
   template {
@@ -81,7 +81,7 @@ resource "google_cloud_run_v2_service" "worker" {
 
 # --- API (public; auth enforced in-app via Clerk) ---
 resource "google_cloud_run_v2_service" "api" {
-  name     = "ledgerpilot-api"
+  name     = "bizopsmate-api"
   location = var.region
 
   template {
@@ -197,7 +197,7 @@ resource "google_cloud_run_v2_service" "api" {
 
 # --- Web (public) ---
 resource "google_cloud_run_v2_service" "web" {
-  name     = "ledgerpilot-web"
+  name     = "bizopsmate-web"
   location = var.region
 
   template {

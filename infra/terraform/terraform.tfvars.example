@@ -1,21 +1,21 @@
-project_id  = "ledgerpilot-prod"
+project_id  = "bizopsmate-prod"
 region      = "asia-south1"
 environment = "prod"
 db_tier     = "db-custom-1-3840"
 
-api_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/api:latest"
-worker_image = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/worker:latest"
-web_image    = "asia-south1-docker.pkg.dev/ledgerpilot-prod/ledgerpilot/web:latest"
+api_image    = "asia-south1-docker.pkg.dev/bizopsmate-prod/bizopsmate/api:latest"
+worker_image = "asia-south1-docker.pkg.dev/bizopsmate-prod/bizopsmate/worker:latest"
+web_image    = "asia-south1-docker.pkg.dev/bizopsmate-prod/bizopsmate/web:latest"
 
 # Public origins. PayHere whitelists the merchant secret against these, so they
 # must be the real domains and not the generated Cloud Run URLs.
-web_domain = "https://ledgerpilot.lk"
-api_domain = "https://api.ledgerpilot.lk"
+web_domain = "https://bizopsmateai.com"
+api_domain = "https://api.bizopsmateai.com"
 
 # Keep one warm instance so a paying customer never waits on a cold start.
 min_instances = 1
 
-alert_email           = "alerts@ledgerpilot.lk"
+alert_email           = "alerts@bizopsmateai.com"
 clerk_publishable_key = "pk_live_replace_me"
 
 # Switch payhere_sandbox to false only after PayHere approves the account.

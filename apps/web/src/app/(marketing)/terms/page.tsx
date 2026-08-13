@@ -8,15 +8,15 @@ import { LEGAL_LAST_UPDATED, business } from '@/lib/business';
 // take real money. See docs/LAUNCH-CHECKLIST.md.
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions — LedgerPilot AI',
-  description: 'The terms governing your use of the LedgerPilot AI service.',
+  title: 'Terms & Conditions — BizOpsMate AI',
+  description: 'The terms governing your use of the BizOpsMate AI service.',
 };
 
 export default function TermsPage() {
   return (
     <LegalPage title="Terms & Conditions" updated={LEGAL_LAST_UPDATED}>
       <p>
-        These terms govern your use of LedgerPilot AI (the &ldquo;Service&rdquo;), operated by{' '}
+        These terms govern your use of BizOpsMate AI (the &ldquo;Service&rdquo;), operated by{' '}
         <strong>{business.name}</strong>
         {business.registrationNo ? ` (Reg. No. ${business.registrationNo})` : ''}, {business.address}
         . By creating an account you agree to them. If you do not agree, please do not use the
@@ -25,7 +25,7 @@ export default function TermsPage() {
 
       <h2>1. The Service</h2>
       <p>
-        LedgerPilot AI helps small businesses turn customer inquiries into quotes and invoices,
+        BizOpsMate AI helps small businesses turn customer inquiries into quotes and invoices,
         draft payment reminders, and review their cash position. It uses artificial intelligence,
         including Google Gemini models, to generate drafts and summaries.
       </p>

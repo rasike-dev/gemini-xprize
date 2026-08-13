@@ -14,7 +14,7 @@ export async function expectPageHeading(page: Page, title: string) {
 
 export async function gotoApp(page: Page, path: string) {
   await page.goto(path, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('aside')).toContainText('LedgerPilot AI', { timeout: 30_000 });
+  await expect(page.locator('aside')).toContainText('BizOpsMate AI', { timeout: 30_000 });
 }
 
 export async function navigateSidebar(page: Page, label: string) {

@@ -4,7 +4,7 @@ import type { CustomerRow, InvoiceRow, TenantProfile } from '@/lib/types';
 import { PageHeader } from '@/components/ui';
 import { InvoicesTable } from '@/components/invoices-table';
 
-export const metadata: Metadata = { title: 'Invoices — LedgerPilot AI' };
+export const metadata: Metadata = { title: 'Invoices — BizOpsMate AI' };
 
 export default async function InvoicesPage() {
   const [invoices, customers, tenant] = await Promise.all([

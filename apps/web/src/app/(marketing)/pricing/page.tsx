@@ -3,9 +3,9 @@ import { PLAN_ORDER, PLANS, TRIAL_DAYS, formatLimit } from '@ledgerpilot/shared'
 import { PricingTable } from '@/components/pricing-table';
 
 export const metadata: Metadata = {
-  title: 'Pricing — LedgerPilot AI',
+  title: 'Pricing — BizOpsMate AI',
   description:
-    'Simple LKR pricing for LedgerPilot AI. Start with a 14-day free trial, no card required. Paid locally through PayHere.',
+    'Simple LKR pricing for BizOpsMate AI. Start with a 14-day free trial, no card required. Paid locally through PayHere.',
 };
 
 const faqs = [

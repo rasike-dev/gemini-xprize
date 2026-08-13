@@ -1,5 +1,5 @@
 # Multi-stage build for the Agent Worker. Build context is the monorepo root:
-#   docker build -f apps/worker/Dockerfile -t ledgerpilot-worker .
+#   docker build -f apps/worker/Dockerfile -t bizopsmate-worker .
 FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"

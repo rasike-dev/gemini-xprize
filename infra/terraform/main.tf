@@ -22,14 +22,14 @@ resource "google_project_service" "enabled" {
 # --- Artifact Registry (container images) ---
 resource "google_artifact_registry_repository" "containers" {
   location      = var.region
-  repository_id = "ledgerpilot"
+  repository_id = "bizopsmate"
   format        = "DOCKER"
   depends_on    = [google_project_service.enabled]
 }
 
 # --- Cloud SQL Postgres ---
 resource "google_sql_database_instance" "pg" {
-  name             = "ledgerpilot-pg"
+  name             = "bizopsmate-pg"
   database_version = "POSTGRES_16"
   region           = var.region
 
@@ -138,13 +138,13 @@ resource "google_cloud_tasks_queue" "agent_runs_deadletter" {
 
 # --- Service accounts ---
 resource "google_service_account" "api" {
-  account_id   = "ledgerpilot-api"
-  display_name = "LedgerPilot API"
+  account_id   = "bizopsmate-api"
+  display_name = "BizOpsMate API"
 }
 
 resource "google_service_account" "worker" {
-  account_id   = "ledgerpilot-worker"
-  display_name = "LedgerPilot Worker"
+  account_id   = "bizopsmate-worker"
+  display_name = "BizOpsMate Worker"
 }
 
 # API may enqueue tasks and read secrets; worker runs Gemini, SQL, storage.

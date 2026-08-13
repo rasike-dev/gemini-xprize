@@ -4,15 +4,15 @@ import { TRIAL_DAYS } from '@ledgerpilot/shared';
 import { PricingTable } from '@/components/pricing-table';
 
 export const metadata: Metadata = {
-  title: 'LedgerPilot AI — Quotes, invoices and payment follow-ups on autopilot',
+  title: 'BizOpsMate AI — Quotes, invoices and payment follow-ups on autopilot',
   description:
-    'LedgerPilot AI turns customer messages into quotes and invoices, chases overdue payments, and shows you where your cash is going. Built for small businesses in Sri Lanka.',
+    'BizOpsMate AI turns customer messages into quotes and invoices, chases overdue payments, and shows you where your cash is going. Built for small businesses in Sri Lanka.',
 };
 
 const steps = [
   {
     label: 'A customer messages you',
-    body: 'A WhatsApp message or email arrives: "Can you quote 20 printed T-shirts?" LedgerPilot reads it and works out what they actually want.',
+    body: 'A WhatsApp message or email arrives: "Can you quote 20 printed T-shirts?" BizOpsMate reads it and works out what they actually want.',
   },
   {
     label: 'A quote is drafted',
@@ -24,7 +24,7 @@ const steps = [
   },
   {
     label: 'Overdue payments get chased',
-    body: 'Every morning LedgerPilot finds what is overdue and drafts a polite, correctly-worded reminder. One tap sends it on WhatsApp or email.',
+    body: 'Every morning BizOpsMate finds what is overdue and drafts a polite, correctly-worded reminder. One tap sends it on WhatsApp or email.',
   },
   {
     label: 'You see your cash position',
@@ -61,7 +61,7 @@ export default function LandingPage() {
               <span className="text-brand"> handled overnight.</span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-slate-600">
-              LedgerPilot AI reads the messages your customers send you, drafts the quote, raises
+              BizOpsMate AI reads the messages your customers send you, drafts the quote, raises
               the invoice, and follows up on what they owe you. You stay in control and approve
               anything before it goes out.
             </p>
@@ -91,7 +91,7 @@ export default function LandingPage() {
           From &ldquo;can you quote this?&rdquo; to money in the bank
         </h2>
         <p className="mt-3 max-w-2xl text-slate-600">
-          Five steps that normally cost you an evening of admin each week. LedgerPilot runs them for
+          Five steps that normally cost you an evening of admin each week. BizOpsMate runs them for
           you and shows its work.
         </p>
 
@@ -154,7 +154,7 @@ export default function LandingPage() {
             Get your evenings back
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-brand-light">
-            Set up your business in a couple of minutes and let LedgerPilot handle the next inquiry
+            Set up your business in a couple of minutes and let BizOpsMate handle the next inquiry
             that lands.
           </p>
           <Link

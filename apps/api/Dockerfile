@@ -1,5 +1,5 @@
 # Multi-stage build for the NestJS API. Build context is the monorepo root:
-#   docker build -f apps/api/Dockerfile -t ledgerpilot-api .
+#   docker build -f apps/api/Dockerfile -t bizopsmate-api .
 FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"

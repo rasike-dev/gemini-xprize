@@ -5,6 +5,8 @@
  * summaries) so both use the same sender, templates, and failure behaviour.
  */
 
+import { BRAND_EMAIL_FROM } from '@ledgerpilot/shared';
+
 export interface EmailMessage {
   to: string;
   subject: string;
@@ -23,7 +25,7 @@ export interface SendResult {
 }
 
 function senderAddress(): string {
-  return process.env.EMAIL_FROM ?? 'LedgerPilot AI <onboarding@resend.dev>';
+  return process.env.EMAIL_FROM ?? BRAND_EMAIL_FROM;
 }
 
 export async function sendEmail(message: EmailMessage): Promise<SendResult> {

@@ -15,7 +15,7 @@ import { UpgradeButton } from '@/components/upgrade-button';
 import { CancelSubscriptionButton } from '@/components/cancel-subscription-button';
 import { ResumeSubscriptionButton, RetryPaymentButton } from '@/components/subscription-actions';
 
-export const metadata: Metadata = { title: 'Billing & plan — LedgerPilot AI' };
+export const metadata: Metadata = { title: 'Billing & plan — BizOpsMate AI' };
 
 const STATUS_COPY: Record<string, { label: string; tone: string }> = {
   [SubscriptionStatus.TRIALING]: { label: 'Free trial', tone: 'bg-sky-100 text-sky-700' },

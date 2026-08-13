@@ -4,7 +4,7 @@ import type { ReminderRow } from '@/lib/types';
 import { PageHeader } from '@/components/ui';
 import { RemindersList } from '@/components/reminders-list';
 
-export const metadata: Metadata = { title: 'Reminders — LedgerPilot AI' };
+export const metadata: Metadata = { title: 'Reminders — BizOpsMate AI' };
 
 export default async function RemindersPage() {
   const reminders = await apiFetchSafe<ReminderRow[]>('/reminders', []);

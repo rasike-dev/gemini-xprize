@@ -36,7 +36,7 @@ export class ReportsController {
     if (query.format === 'pdf') {
       const pdf = await this.buildPdf(report);
       return {
-        filename: `ledgerpilot-report-${report.monthLabel.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+        filename: `bizopsmate-report-${report.monthLabel.replace(/\s+/g, '-').toLowerCase()}.pdf`,
         mimeType: 'application/pdf',
         base64: pdf.toString('base64'),
       };
@@ -56,7 +56,7 @@ export class ReportsController {
     ];
 
     return {
-      filename: `ledgerpilot-report-${report.monthLabel.replace(/\s+/g, '-').toLowerCase()}.csv`,
+      filename: `bizopsmate-report-${report.monthLabel.replace(/\s+/g, '-').toLowerCase()}.csv`,
       mimeType: 'text/csv',
       content: csvLines.join('\n'),
     };
@@ -78,7 +78,7 @@ export class ReportsController {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      doc.fontSize(20).text('LedgerPilot Monthly Report');
+      doc.fontSize(20).text('BizOpsMate Monthly Report');
       doc.moveDown(0.2).fontSize(11).fillColor('#555').text(report.monthLabel);
       doc.moveDown();
 

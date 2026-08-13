@@ -14,7 +14,7 @@ export const business = {
   address: process.env.NEXT_PUBLIC_BUSINESS_ADDRESS ?? '[Set NEXT_PUBLIC_BUSINESS_ADDRESS]',
   registrationNo: process.env.NEXT_PUBLIC_BUSINESS_REG_NO ?? '',
   /** Public origin, used for canonical links in legal copy. */
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://bizopsmateai.com',
 } as const;
 
 /** Rendered as the "last updated" date on legal pages. */

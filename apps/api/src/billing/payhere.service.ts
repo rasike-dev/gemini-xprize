@@ -241,7 +241,7 @@ export class PayHereService {
         cancel_url: req.cancelUrl,
         notify_url: notifyUrl,
         order_id: orderId,
-        items: `LedgerPilot AI — ${plan.name} (${req.interval === BillingInterval.ANNUAL ? 'annual' : 'monthly'})`,
+        items: `BizOpsMate AI — ${plan.name} (${req.interval === BillingInterval.ANNUAL ? 'annual' : 'monthly'})`,
         currency: PLAN_CURRENCY,
         amount,
         first_name: req.customer.firstName,

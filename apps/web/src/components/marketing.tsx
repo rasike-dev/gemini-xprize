@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BRAND_NAME, BRAND_TAGLINE } from '@ledgerpilot/shared';
 import { business } from '@/lib/business';
 
 export function MarketingHeader() {
@@ -7,8 +8,8 @@ export function MarketingHeader() {
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex flex-col leading-tight">
-          <span className="text-lg font-bold text-brand">LedgerPilot AI</span>
-          <span className="text-xs text-slate-400">Finance &amp; ops, on autopilot</span>
+          <span className="text-lg font-bold text-brand">{BRAND_NAME}</span>
+          <span className="text-xs text-slate-400">{BRAND_TAGLINE}</span>
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-slate-600">
           <Link href="/pricing" className="hidden hover:text-slate-900 sm:block">
@@ -34,7 +35,7 @@ export function MarketingFooter() {
     <footer className="border-t border-slate-200 bg-slate-50">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="text-sm font-bold text-brand">LedgerPilot AI</div>
+          <div className="text-sm font-bold text-brand">{BRAND_NAME}</div>
           <p className="mt-2 text-sm text-slate-500">
             An AI finance and operations agent for small businesses in Sri Lanka.
           </p>

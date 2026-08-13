@@ -87,7 +87,7 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 8080);
   await app.listen(port, '0.0.0.0');
-  Logger.log(`LedgerPilot API listening on :${port}`, 'Bootstrap');
+  Logger.log(`BizOpsMate API listening on :${port}`, 'Bootstrap');
 }
 
 bootstrap().catch((err) => {

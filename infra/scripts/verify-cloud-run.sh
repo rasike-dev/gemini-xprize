@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Verify deployed Cloud Run services and core endpoints.
 # Usage:
-#   PROJECT_ID=ledgerpilot-prod REGION=asia-south1 ./infra/scripts/verify-cloud-run.sh
+#   PROJECT_ID=bizopsmate-prod REGION=asia-south1 ./infra/scripts/verify-cloud-run.sh
 
 : "${PROJECT_ID:?PROJECT_ID is required}"
 : "${REGION:=asia-south1}"
@@ -12,9 +12,9 @@ describe() {
   gcloud run services describe "$1" --region "${REGION}" --project "${PROJECT_ID}" --format='value(status.url)'
 }
 
-WEB_URL="$(describe ledgerpilot-web)"
-API_URL="$(describe ledgerpilot-api)"
-WORKER_URL="$(describe ledgerpilot-worker)"
+WEB_URL="$(describe bizopsmate-web)"
+API_URL="$(describe bizopsmate-api)"
+WORKER_URL="$(describe bizopsmate-worker)"
 
 echo "WEB:    ${WEB_URL}"
 echo "API:    ${API_URL}"

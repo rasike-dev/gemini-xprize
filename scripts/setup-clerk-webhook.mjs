@@ -95,7 +95,7 @@ async function upsertSvixEndpoint(portalUrl, webhookUrl) {
     }
     const created = await svix.endpoint.create(appId, {
       url: webhookUrl,
-      description: 'LedgerPilot local dev',
+      description: 'BizOpsMate local dev',
       filterTypes: EVENTS,
     });
     const secret = await svix.endpoint.getSecret(appId, created.id);

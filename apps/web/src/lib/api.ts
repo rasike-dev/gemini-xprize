@@ -1,7 +1,7 @@
 import { API_URL, clerkEnabled, DEV_ORG_ID } from './config';
 
 /**
- * Server-side fetch to the LedgerPilot API. Attaches a Clerk bearer token when
+ * Server-side fetch to the BizOpsMate API. Attaches a Clerk bearer token when
  * Clerk is configured, otherwise falls back to dev headers (DISABLE_AUTH=true
  * on the API). Always no-store so dashboard data is fresh.
  */

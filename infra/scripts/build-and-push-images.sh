@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build and push LedgerPilot images to Artifact Registry.
+# Build and push BizOpsMate images to Artifact Registry.
 # Usage:
-#   PROJECT_ID=ledgerpilot-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) ./infra/scripts/build-and-push-images.sh
+#   PROJECT_ID=bizopsmate-prod REGION=asia-south1 TAG=$(git rev-parse --short HEAD) ./infra/scripts/build-and-push-images.sh
 #
 # The web image bakes NEXT_PUBLIC_* values at build time (Next.js inlines them),
 # so they are read here from WEB_ENV_FILE (default .env.production) rather than
@@ -14,7 +14,7 @@ set -euo pipefail
 : "${TAG:=latest}"
 : "${WEB_ENV_FILE:=.env.production}"
 
-REPO="${REGION}-docker.pkg.dev/${PROJECT_ID}/ledgerpilot"
+REPO="${REGION}-docker.pkg.dev/${PROJECT_ID}/bizopsmate"
 API_IMAGE="${REPO}/api:${TAG}"
 WORKER_IMAGE="${REPO}/worker:${TAG}"
 WEB_IMAGE="${REPO}/web:${TAG}"

@@ -33,7 +33,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'ledgerpilot-worker' });
+  res.json({ status: 'ok', service: 'bizopsmate-worker' });
 });
 
 /**
@@ -90,5 +90,5 @@ app.post('/jobs/usage-reset', async (_req, res) => {
 
 const port = Number(process.env.WORKER_PORT ?? process.env.PORT ?? 8081);
 app.listen(port, () => {
-  console.log(`LedgerPilot worker listening on :${port}`);
+  console.log(`BizOpsMate worker listening on :${port}`);
 });

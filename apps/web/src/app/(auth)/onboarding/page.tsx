@@ -4,7 +4,7 @@ import { BusinessProfileForm } from '@/components/business-profile-form';
 import { clerkEnabled } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'Set up your business — LedgerPilot AI',
+  title: 'Set up your business — BizOpsMate AI',
 };
 
 function Steps({ current }: { current: 1 | 2 }) {
@@ -61,7 +61,7 @@ export default async function OnboardingPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Create your workspace</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             Name it after your business. This keeps your records separate from every other business
-            on LedgerPilot, and you can invite your team into it later.
+            on BizOpsMate, and you can invite your team into it later.
           </p>
         </div>
         <CreateOrganization

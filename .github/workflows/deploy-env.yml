@@ -83,9 +83,9 @@ jobs:
           TF_VAR_payhere_merchant_plan: ${{ vars.PAYHERE_MERCHANT_PLAN || 'LITE' }}
           TF_VAR_payhere_app_id: ${{ vars.PAYHERE_APP_ID }}
           TF_VAR_min_instances: ${{ inputs.environment == 'production' && 1 || 0 }}
-          TF_VAR_api_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/api:${{ inputs.tag }}
-          TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/worker:${{ inputs.tag }}
-          TF_VAR_web_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/ledgerpilot/web:${{ inputs.tag }}
+          TF_VAR_api_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/bizopsmate/api:${{ inputs.tag }}
+          TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/bizopsmate/worker:${{ inputs.tag }}
+          TF_VAR_web_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/bizopsmate/web:${{ inputs.tag }}
         run: |
           terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="prefix=${{ inputs.environment }}"
           terraform apply -auto-approve

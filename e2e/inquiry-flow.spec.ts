@@ -25,8 +25,8 @@ test('inquiry to agent-run pipeline creates inquiry and quote runs', async ({ re
   const intake = await request.post('/api/intake', {
     headers: {
       'content-type': 'application/json',
-      'x-ledgerpilot-org': 'org_demo_printpro',
-      'x-ledgerpilot-signature': signature,
+      'x-bizopsmate-org': 'org_demo_printpro',
+      'x-bizopsmate-signature': signature,
     },
     data: body,
   });

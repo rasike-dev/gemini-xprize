@@ -3,7 +3,7 @@ import { DevAuthNotice } from '@/components/dev-auth-notice';
 import { clerkEnabled } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'Sign in — LedgerPilot AI',
+  title: 'Sign in — BizOpsMate AI',
 };
 
 export default async function SignInPage() {

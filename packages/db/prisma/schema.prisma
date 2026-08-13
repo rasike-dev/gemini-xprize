@@ -1,4 +1,4 @@
-// LedgerPilot AI - data model.
+// BizOpsMate AI - data model.
 // Multi-tenant: every tenant-scoped table carries tenantId and is protected by
 // Postgres Row-Level Security (see migrations/*_rls). The app sets
 // `app.tenant_id` per transaction; RLS is the real isolation boundary.
@@ -159,7 +159,7 @@ model Subscription {
   @@map("subscriptions")
 }
 
-/// Payments LedgerPilot received from a tenant for its own subscription.
+/// Payments BizOpsMate received from a tenant for its own subscription.
 /// Distinct from `Payment`, which is money the tenant received from its customers.
 model BillingPayment {
   id             String          @id @default(uuid())

@@ -94,7 +94,7 @@ Draft a reminder.`,
 
   if (canAutoSend && invoice.customer.email) {
     const rendered = reminderEmail({
-      businessName: ctx.tenant?.name ?? 'LedgerPilot',
+      businessName: ctx.tenant?.name ?? 'BizOpsMate',
       message: result.data.message,
       invoiceNumber: invoice.number,
       outstandingMinor: outstanding,

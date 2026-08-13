@@ -4,7 +4,7 @@ import { DevAuthNotice } from '@/components/dev-auth-notice';
 import { clerkEnabled } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'Start your free trial — LedgerPilot AI',
+  title: 'Start your free trial — BizOpsMate AI',
 };
 
 export default async function SignUpPage() {

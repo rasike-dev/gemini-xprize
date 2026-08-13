@@ -70,7 +70,7 @@ export class RemindersService {
     const invoice = reminder.invoice;
     const customer = invoice.customer;
     const outstanding = invoice.totalMinor - invoice.paidMinor;
-    const businessName = tenant?.name ?? 'LedgerPilot';
+    const businessName = tenant?.name ?? 'BizOpsMate';
 
     // Prefer email when we can send it ourselves; the owner does not have to do
     // anything for it to arrive.

@@ -6,7 +6,7 @@
  * escaped before interpolation.
  */
 
-import { formatMoney } from '@ledgerpilot/shared';
+import { formatMoney, BRAND_NAME } from '@ledgerpilot/shared';
 
 const BRAND = '#0f766e';
 const TEXT = '#0f172a';
@@ -83,7 +83,7 @@ function layout({ businessName, heading, bodyHtml, cta, footerNote }: LayoutOpti
       <td style="padding:20px 32px;border-top:1px solid ${BORDER};background-color:#f8fafc;">
         <p style="margin:0;font-size:12px;line-height:1.6;color:${MUTED};">
           ${footerNote ? `${escapeHtml(footerNote)}<br />` : ''}
-          Sent by ${safeName} using LedgerPilot AI.
+          Sent by ${safeName} using ${BRAND_NAME}.
         </p>
       </td>
     </tr>

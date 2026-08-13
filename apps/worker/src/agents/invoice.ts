@@ -44,7 +44,7 @@ export async function runInvoiceAgent(run: AgentRunRow): Promise<AgentOutcome> {
       customer: { name: ctx.invoice.customer.name, email: ctx.invoice.customer.email },
       lines: ctx.invoice.lines,
     },
-    ctx.tenant?.name ?? 'LedgerPilot AI',
+    ctx.tenant?.name ?? 'BizOpsMate AI',
   );
 
   await withTenant(run.tenantId, (tx) =>

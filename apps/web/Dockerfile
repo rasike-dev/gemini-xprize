@@ -1,5 +1,5 @@
 # Multi-stage build for the Next.js web app (standalone output). Context = repo root:
-#   docker build -f apps/web/Dockerfile -t ledgerpilot-web .
+#   docker build -f apps/web/Dockerfile -t bizopsmate-web .
 FROM node:22-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"

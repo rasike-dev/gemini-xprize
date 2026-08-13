@@ -24,7 +24,7 @@ function renderPdf(invoice: InvoiceForPdf, businessName: string): Promise<Buffer
     doc.on('error', reject);
 
     doc.fontSize(20).text(businessName, { continued: false });
-    doc.moveDown(0.3).fontSize(10).fillColor('#666').text('Powered by LedgerPilot AI');
+    doc.moveDown(0.3).fontSize(10).fillColor('#666').text('Powered by BizOpsMate AI');
     doc.moveDown();
 
     doc.fillColor('#000').fontSize(16).text(`Invoice ${invoice.number}`);

@@ -28,7 +28,7 @@ What it cannot do:
 
 - Send while nobody is at a keyboard, so no truly automatic follow-up schedule.
 - Confirm delivery or read status.
-- Capture replies back into LedgerPilot as inquiries.
+- Capture replies back into BizOpsMate as inquiries.
 - Scale past a handful of messages before clicking becomes the bottleneck.
 
 ## What the Business API would add
@@ -101,6 +101,6 @@ Each of these captures part of the value without a BSP:
   which recovers most of the timing benefit of automation.
 - **Reply capture through intake.** The intake webhook already accepts signed
   inbound messages, so a tenant forwarding WhatsApp to an integration gets
-  replies into LedgerPilot without us touching Meta.
+  replies into BizOpsMate without us touching Meta.
 
 Do these before spending on a BSP.

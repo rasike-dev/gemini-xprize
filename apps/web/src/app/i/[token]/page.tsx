@@ -142,7 +142,7 @@ export default async function PublicInvoicePage({
       </div>
 
       <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-slate-400">
-        Sent with LedgerPilot AI. Reply to the message this link came from if anything looks wrong.
+        Sent with BizOpsMate AI. Reply to the message this link came from if anything looks wrong.
       </p>
     </main>
   );

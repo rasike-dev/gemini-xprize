@@ -2,7 +2,7 @@
 # is allowed to invoke the private worker service.
 
 resource "google_cloud_scheduler_job" "overdue_scan" {
-  name      = "ledgerpilot-overdue-scan"
+  name      = "bizopsmate-overdue-scan"
   region    = var.region
   schedule  = "0 9 * * *" # daily 09:00
   time_zone = "Asia/Colombo"
@@ -22,7 +22,7 @@ resource "google_cloud_scheduler_job" "overdue_scan" {
 # The worker also does this lazily on every run, so a missed job here delays a
 # reset rather than locking anyone out of the product they are paying for.
 resource "google_cloud_scheduler_job" "usage_reset" {
-  name      = "ledgerpilot-usage-reset"
+  name      = "bizopsmate-usage-reset"
   region    = var.region
   schedule  = "15 0 * * *" # daily 00:15
   time_zone = "Asia/Colombo"
@@ -39,7 +39,7 @@ resource "google_cloud_scheduler_job" "usage_reset" {
 }
 
 resource "google_cloud_scheduler_job" "cashflow_summary" {
-  name      = "ledgerpilot-cashflow-summary"
+  name      = "bizopsmate-cashflow-summary"
   region    = var.region
   schedule  = "0 18 * * *" # daily 18:00
   time_zone = "Asia/Colombo"

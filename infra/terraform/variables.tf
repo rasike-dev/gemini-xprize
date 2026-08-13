@@ -62,7 +62,7 @@ variable "min_instances" {
 
 variable "web_domain" {
   type        = string
-  description = "Public site origin, e.g. https://ledgerpilot.lk. Used for CORS and invoice share links."
+  description = "Public site origin, e.g. https://bizopsmateai.com. Used for CORS and invoice share links."
 
   validation {
     # A trailing slash would produce '//api/webhooks/payhere' and a malformed
@@ -75,7 +75,7 @@ variable "web_domain" {
 variable "api_domain" {
   type        = string
   description = <<-EOT
-    Public API origin, e.g. https://api.ledgerpilot.lk.
+    Public API origin, e.g. https://api.bizopsmateai.com.
 
     Set explicitly rather than derived from the Cloud Run URI: the API cannot
     reference its own URI, and PayHere issues the merchant secret against a

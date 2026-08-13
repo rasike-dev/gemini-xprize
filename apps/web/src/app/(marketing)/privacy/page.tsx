@@ -7,8 +7,8 @@ import { LEGAL_LAST_UPDATED, business } from '@/lib/business';
 // keep the sub-processor list in step with reality.
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — LedgerPilot AI',
-  description: 'How LedgerPilot AI collects, uses, and protects personal data.',
+  title: 'Privacy Policy — BizOpsMate AI',
+  description: 'How BizOpsMate AI collects, uses, and protects personal data.',
 };
 
 export default function PrivacyPage() {
@@ -16,7 +16,7 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy Policy" updated={LEGAL_LAST_UPDATED}>
       <p>
         This policy explains how <strong>{business.name}</strong> collects, uses, and protects
-        personal data when you use LedgerPilot AI. We are the data controller for your account
+        personal data when you use BizOpsMate AI. We are the data controller for your account
         information, and we act as a data processor for the customer records you put into the
         Service.
       </p>

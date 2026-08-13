@@ -1,8 +1,8 @@
 {
-  "name": "ledgerpilot-ai",
+  "name": "bizopsmate-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "LedgerPilot AI - AI finance & operations agent for small businesses",
+  "description": "BizOpsMate AI - AI finance & operations agent for small businesses",
   "packageManager": "pnpm@10.26.0",
   "engines": {
     "node": ">=20"

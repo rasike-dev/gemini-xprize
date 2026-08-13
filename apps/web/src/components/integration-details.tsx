@@ -57,15 +57,15 @@ export function IntegrationDetails({ integration }: { integration: TenantIntegra
     <section className="rounded-xl border border-slate-200 bg-white p-6">
       <h2 className="font-semibold text-slate-900">Inbound message webhook</h2>
       <p className="mt-1 text-sm leading-relaxed text-slate-500">
-        Point your WhatsApp or email forwarding here and LedgerPilot will read new inquiries
+        Point your WhatsApp or email forwarding here and BizOpsMate will read new inquiries
         automatically. Sign the request body with HMAC-SHA256 using the secret below and send the
-        hex digest in the <code className="rounded bg-slate-100 px-1">x-ledgerpilot-signature</code>{' '}
+        hex digest in the <code className="rounded bg-slate-100 px-1">x-bizopsmate-signature</code>{' '}
         header.
       </p>
 
       <div className="mt-6 space-y-5">
         <CopyRow label="Endpoint" value={integration.intakeUrl || 'Set PUBLIC_API_URL on the API'} />
-        <CopyRow label="x-ledgerpilot-org header" value={integration.orgHeader} />
+        <CopyRow label="x-bizopsmate-org header" value={integration.orgHeader} />
         <CopyRow label="Signing secret" value={integration.signingSecret} secret />
       </div>
 

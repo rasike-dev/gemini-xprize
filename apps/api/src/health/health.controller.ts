@@ -9,7 +9,7 @@ export class HealthController {
   @Public()
   @Get('health')
   health() {
-    return { status: 'ok', service: 'ledgerpilot-api', ts: new Date().toISOString() };
+    return { status: 'ok', service: 'bizopsmate-api', ts: new Date().toISOString() };
   }
 
   @Public()
@@ -19,7 +19,7 @@ export class HealthController {
     await this.prisma.client.$queryRaw`SELECT 1`;
     return {
       status: 'ok',
-      service: 'ledgerpilot-api',
+      service: 'bizopsmate-api',
       db: 'ok',
       latencyMs: Date.now() - started,
       ts: new Date().toISOString(),

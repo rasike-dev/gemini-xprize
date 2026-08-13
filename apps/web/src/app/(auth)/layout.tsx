@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { BRAND_NAME, BRAND_TAGLINE } from '@ledgerpilot/shared';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -7,8 +8,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center px-6 py-4">
           <Link href="/" className="flex flex-col leading-tight">
-            <span className="text-lg font-bold text-brand">LedgerPilot AI</span>
-            <span className="text-xs text-slate-400">Finance &amp; ops, on autopilot</span>
+            <span className="text-lg font-bold text-brand">{BRAND_NAME}</span>
+            <span className="text-xs text-slate-400">{BRAND_TAGLINE}</span>
           </Link>
         </div>
       </header>

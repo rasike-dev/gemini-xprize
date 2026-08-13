@@ -60,7 +60,7 @@ const customer = {
 beforeEach(() => {
   process.env.PAYHERE_MERCHANT_ID = MERCHANT_ID;
   process.env.PAYHERE_MERCHANT_SECRET = MERCHANT_SECRET;
-  process.env.PAYHERE_NOTIFY_URL = 'https://api.ledgerpilot.lk/api/webhooks/payhere';
+  process.env.PAYHERE_NOTIFY_URL = 'https://api.bizopsmateai.com/api/webhooks/payhere';
   process.env.PAYHERE_SANDBOX = 'true';
 });
 
@@ -78,8 +78,8 @@ describe('PayHere checkout', () => {
       tenantId: 'tenant_1',
       plan: PlanTier.STARTER,
       interval: BillingInterval.MONTHLY,
-      returnUrl: 'https://ledgerpilot.lk/app/billing?payhere=success',
-      cancelUrl: 'https://ledgerpilot.lk/app/billing?payhere=cancelled',
+      returnUrl: 'https://bizopsmateai.com/app/billing?payhere=success',
+      cancelUrl: 'https://bizopsmateai.com/app/billing?payhere=cancelled',
       customer,
     });
 

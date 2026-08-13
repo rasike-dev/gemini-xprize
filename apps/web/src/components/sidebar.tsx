@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { BRAND_NAME, BRAND_TAGLINE } from '@ledgerpilot/shared';
 
 const nav = [
   { href: '/app', label: 'Dashboard' },
@@ -43,8 +44,8 @@ export function Sidebar() {
     <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
       <div className="px-5 py-6">
         <Link href="/app" className="block">
-          <div className="text-lg font-bold text-brand">LedgerPilot AI</div>
-          <div className="text-xs text-slate-400">Finance &amp; ops, on autopilot</div>
+          <div className="text-lg font-bold text-brand">{BRAND_NAME}</div>
+          <div className="text-xs text-slate-400">{BRAND_TAGLINE}</div>
         </Link>
       </div>
 

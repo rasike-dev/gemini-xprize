@@ -8,7 +8,7 @@
 # ============================================================================
 
 resource "google_monitoring_notification_channel" "email" {
-  display_name = "LedgerPilot alerts (${var.environment})"
+  display_name = "BizOpsMate alerts (${var.environment})"
   type         = "email"
 
   labels = {
@@ -20,7 +20,7 @@ resource "google_monitoring_notification_channel" "email" {
 
 # --- Uptime: is the site actually answering? ---
 resource "google_monitoring_uptime_check_config" "web" {
-  display_name = "ledgerpilot-web (${var.environment})"
+  display_name = "bizopsmate-web (${var.environment})"
   timeout      = "10s"
   period       = "300s"
 
@@ -43,7 +43,7 @@ resource "google_monitoring_uptime_check_config" "web" {
 }
 
 resource "google_monitoring_uptime_check_config" "api" {
-  display_name = "ledgerpilot-api (${var.environment})"
+  display_name = "bizopsmate-api (${var.environment})"
   timeout      = "10s"
   period       = "300s"
 
@@ -67,7 +67,7 @@ resource "google_monitoring_uptime_check_config" "api" {
 }
 
 resource "google_monitoring_alert_policy" "uptime" {
-  display_name = "LedgerPilot down (${var.environment})"
+  display_name = "BizOpsMate down (${var.environment})"
   combiner     = "OR"
 
   conditions {
@@ -96,13 +96,13 @@ resource "google_monitoring_alert_policy" "uptime" {
   notification_channels = [google_monitoring_notification_channel.email.id]
 
   documentation {
-    content = "A LedgerPilot uptime check has been failing for 5 minutes. Check Cloud Run logs and Cloud SQL availability."
+    content = "A BizOpsMate uptime check has been failing for 5 minutes. Check Cloud Run logs and Cloud SQL availability."
   }
 }
 
 # --- Errors: up, but failing requests ---
 resource "google_monitoring_alert_policy" "api_5xx" {
-  display_name = "LedgerPilot API 5xx rate (${var.environment})"
+  display_name = "BizOpsMate API 5xx rate (${var.environment})"
   combiner     = "OR"
 
   conditions {
@@ -137,7 +137,7 @@ resource "google_monitoring_alert_policy" "api_5xx" {
 
 # --- Dead letters: agent runs that have given up ---
 resource "google_monitoring_alert_policy" "deadletter" {
-  display_name = "LedgerPilot agent runs dead-lettered (${var.environment})"
+  display_name = "BizOpsMate agent runs dead-lettered (${var.environment})"
   combiner     = "OR"
 
   conditions {

@@ -5,7 +5,7 @@ import { Card, PageHeader } from '@/components/ui';
 import { SettingsForm } from '@/components/settings-form';
 import { IntegrationDetails } from '@/components/integration-details';
 
-export const metadata: Metadata = { title: 'Settings — LedgerPilot AI' };
+export const metadata: Metadata = { title: 'Settings — BizOpsMate AI' };
 
 export default async function SettingsPage() {
   const [tenant, subscription, integration] = await Promise.all([

@@ -9,15 +9,15 @@ import { LEGAL_LAST_UPDATED, business } from '@/lib/business';
 // this page honest about what you will actually do.
 
 export const metadata: Metadata = {
-  title: 'Refund Policy — LedgerPilot AI',
-  description: 'When LedgerPilot AI issues refunds, and how to request one.',
+  title: 'Refund Policy — BizOpsMate AI',
+  description: 'When BizOpsMate AI issues refunds, and how to request one.',
 };
 
 export default function RefundPolicyPage() {
   return (
     <LegalPage title="Refund & Cancellation Policy" updated={LEGAL_LAST_UPDATED}>
       <p>
-        LedgerPilot AI is a subscription software service supplied by{' '}
+        BizOpsMate AI is a subscription software service supplied by{' '}
         <strong>{business.name}</strong>. This page explains exactly when we refund a payment. We
         have tried to write it plainly rather than defensively.
       </p>

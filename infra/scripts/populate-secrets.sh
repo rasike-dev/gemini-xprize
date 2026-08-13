@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Populate Secret Manager values from an env file.
 # Usage:
-#   PROJECT_ID=ledgerpilot-prod ENV_FILE=.env.production ./infra/scripts/populate-secrets.sh
+#   PROJECT_ID=bizopsmate-prod ENV_FILE=.env.production ./infra/scripts/populate-secrets.sh
 
 : "${PROJECT_ID:?PROJECT_ID is required}"
 : "${ENV_FILE:=.env}"

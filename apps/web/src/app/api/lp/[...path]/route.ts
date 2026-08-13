@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { proxyRequest, resolveLpTargetPath } from '../../_proxy';
 
 /**
- * Single authenticated pass-through to the LedgerPilot API for browser-initiated
+ * Single authenticated pass-through to the BizOpsMate API for browser-initiated
  * calls. Client components cannot mint a Clerk backend token themselves, so every
  * mutation goes through here and picks up auth server-side.
  *

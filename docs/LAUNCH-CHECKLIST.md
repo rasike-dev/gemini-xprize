@@ -1,6 +1,6 @@
-# LedgerPilot AI — Launch Checklist
+# BizOpsMate AI — Launch Checklist
 
-Operator runbook for taking LedgerPilot from code to first paying customer. Items
+Operator runbook for taking BizOpsMate from code to first paying customer. Items
 marked **(external)** have lead times outside our control — start them first.
 
 ---

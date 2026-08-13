@@ -1,4 +1,4 @@
-/** Response shapes from the LedgerPilot API, as consumed by the dashboard. */
+/** Response shapes from the BizOpsMate API, as consumed by the dashboard. */
 
 import type { PlanDefinition, PlanFeatures, PlanTier, SubscriptionStatus } from '@ledgerpilot/shared';
 
